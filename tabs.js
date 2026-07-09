@@ -11,4 +11,5 @@ const TABS = [
   { name: "ドット絵", file: "tabs/dot.html", author: "楽人" },
   { name: "テトリス", file: "tabs/tetris.html", author: "楽人" }
   { name: "ネコペン・スパイア", file: "tabs/nekopen.html", author: "nekopen" },
+  { name: "パンケーキタワー", file: "tabs/tumiki.html", author: "友里" }
 ];
