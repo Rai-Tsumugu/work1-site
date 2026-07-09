@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HITプラザ - ランキング</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/ranking.css">
+</head>
+<body class="ranking-page">
+  <header class="ranking-header">
+    <a href="index.html" class="back-btn">&#8592; 戻る</a>
+    <h1>HITプラザ 人気ランキング</h1>
+  </header>
+
+  <main class="ranking-main">
+    <section class="ranking-section">
+      <h2 class="category-title">ごはんもの</h2>
+      <ol class="ranking-list" id="gohan-list">
+        <li class="loading"><span class="skeleton-item"></span><span class="skeleton-item"></span><span class="skeleton-item"></span></li>
+      </ol>
+    </section>
+
+    <section class="ranking-section">
+      <h2 class="category-title">麺</h2>
+      <ol class="ranking-list" id="men-list">
+        <li class="loading"><span class="skeleton-item"></span><span class="skeleton-item"></span><span class="skeleton-item"></span></li>
+      </ol>
+    </section>
+  </main>
+
+  <a href="https://forms.gle/93vnHkwLpaiUCmKq8" class="vote-link-btn" id="vote-btn" title="投票ページへ" target="_blank" rel="noopener noreferrer">
+    <span class="vote-icon"><span style="font-size: 120%;">投票</span><br>する</span>
+  </a>
+
+  <script>
+    const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyheOHzSI_mRT8AwEnIAYCyZF5yiRDKlUDn_1t0JhnXb1VVexp3mpsqVaqi45GZE-rz5Q/exec';
+
+    function renderRanking(listId, counts) {
+      const list = document.getElementById(listId);
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+
+      if (sorted.length === 0) {
+        list.innerHTML = '<li class="no-data">まだ投票がありません</li>';
+        return;
+      }
+
+      list.innerHTML = sorted.map(([name, count], i) => {
+        const medal = i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : '';
+        return `<li class="ranking-item ${medal}">
+          <span class="rank">${i + 1}</span>
+          <span class="item-name">${name}</span>
+          <span class="vote-count">${count}票</span>
+        </li>`;
+      }).join('');
+    }
+
+    fetch(APPS_SCRIPT_URL)
+      .then(res => res.json())
+      .then(data => {
+        renderRanking('gohan-list', data.gohan);
+        renderRanking('men-list', data.men);
+      })
+      .catch(() => {
+        document.querySelectorAll('.ranking-list').forEach(el => {
+          el.innerHTML = '<li class="no-data">データの取得に失敗しました</li>';
+        });
+      });
+  </script>
+</body>
+</html>

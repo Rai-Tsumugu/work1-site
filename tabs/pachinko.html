@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>パチンコ ― デジパチ777</title>
+<style>
+  :root {
+    /* サイト共通トークンを継承しつつ、筐体（ダーク）へ拡張 */
+    --paper: #FAFAF8;
+    --signal: #2F5CFF;
+    --muted: #8A8E99;
+    --gold: #F5C542;
+    --cabinet-0: #0B0D11;
+    --cabinet-1: #14171D;
+    --bezel: #23262E;
+    --font-body: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", "Yu Gothic", sans-serif;
+    --font-mono: "SF Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    font-family: var(--font-body);
+    color: var(--paper);
+    background:
+      radial-gradient(120% 80% at 50% -10%, #1b1f27 0%, var(--cabinet-1) 42%, var(--cabinet-0) 100%);
+    overflow: hidden;
+  }
+
+  .cabinet {
+    height: 100%;
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    gap: 0;
+  }
+
+  /* 両サイドの電飾（アンビエント層） */
+  .lights {
+    flex: 1 1 0;
+    min-width: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .lights::before {
+    content: "";
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 10px;
+    background-image: radial-gradient(circle, var(--signal) 0 2.4px, transparent 3px);
+    background-size: 10px 22px;
+    background-repeat: repeat-y;
+    opacity: 0.55;
+    animation: blink 1.1s steps(2) infinite;
+  }
+  .lights-l::before { right: 8px; }
+  .lights-r::before { left: 8px; animation-delay: .55s; }
+  @keyframes blink { 0% { opacity: .18; } 100% { opacity: .7; } }
+
+  .stage {
+    flex: 0 1 460px;
+    min-width: 0;
+    height: 100%;
+    padding: 14px 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* 上部：ブランド + スコア */
+  .topbar {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 12px;
+    flex: 0 0 auto;
+  }
+  .eyebrow {
+    margin: 0 0 3px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .title {
+    margin: 0;
+    font-size: 21px;
+    font-weight: 900;
+    letter-spacing: -0.01em;
+    line-height: 1;
+  }
+  .title b { color: var(--gold); font-weight: 900; }
+  .stats { display: flex; gap: 16px; flex-shrink: 0; }
+  .stat { text-align: right; line-height: 1; }
+  .stat-num {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat-num.gold { color: var(--gold); }
+  .stat-label {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  /* 盤面 */
+  .board-wrap {
+    flex: 1 1 auto;
+    min-height: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #board {
+    display: block;
+    border-radius: 10px;
+    background: #05070c;
+    box-shadow:
+      0 0 0 3px var(--bezel),
+      0 0 0 5px #000,
+      0 14px 40px rgba(0,0,0,0.55),
+      inset 0 0 60px rgba(0,0,0,0.6);
+  }
+  /* 大当たりオーバーレイ */
+  .jackpot {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity .18s ease;
+  }
+  .jackpot.on { opacity: 1; }
+  .jackpot::before {
+    content: "";
+    position: absolute;
+    inset: -20%;
+    background: radial-gradient(circle at 50% 45%, rgba(245,197,66,.55), rgba(245,197,66,0) 60%);
+    animation: burst 1.1s ease-out infinite;
+  }
+  .jackpot span {
+    position: relative;
+    font-weight: 900;
+    font-size: clamp(30px, 9vw, 52px);
+    letter-spacing: 0.04em;
+    color: #fff;
+    text-shadow: 0 0 18px var(--gold), 0 0 4px #fff, 0 3px 0 #b8860b;
+    animation: pop .5s cubic-bezier(.2,1.6,.3,1) both;
+  }
+  @keyframes burst { 0% { transform: scale(.85); opacity: .9; } 100% { transform: scale(1.25); opacity: .2; } }
+  @keyframes pop { 0% { transform: scale(.2) rotate(-6deg); } 60% { transform: scale(1.12) rotate(2deg); } 100% { transform: scale(1) rotate(0); } }
+
+  /* 下部：ハンドル */
+  .controls {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .hint {
+    margin: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 11.5px;
+    line-height: 1.45;
+    color: var(--muted);
+    font-family: var(--font-mono);
+  }
+  .hint b { color: var(--signal); font-weight: 600; }
+  .hint.win b { color: var(--gold); }
+
+  .handle {
+    flex: 0 0 auto;
+    width: 84px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    user-select: none;
+    -webkit-user-select: none;
+    cursor: pointer;
+  }
+  .knob {
+    width: 62px;
+    height: 62px;
+    border-radius: 50%;
+    position: relative;
+    background:
+      radial-gradient(circle at 38% 32%, #4a4f5a, #1a1d24 70%);
+    box-shadow:
+      inset 0 2px 3px rgba(255,255,255,.18),
+      inset 0 -4px 8px rgba(0,0,0,.6),
+      0 4px 10px rgba(0,0,0,.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform .06s ease;
+  }
+  .knob::after {
+    /* 指標（チャージで回転） */
+    content: "";
+    position: absolute;
+    top: 6px;
+    width: 4px; height: 18px;
+    border-radius: 3px;
+    background: var(--signal);
+    transform-origin: 50% 25px;
+    transform: rotate(var(--rot, 0deg));
+    box-shadow: 0 0 8px var(--signal);
+  }
+  .handle:active .knob { transform: scale(.94); }
+  .knob-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .06em;
+    color: var(--paper);
+  }
+  .gauge {
+    width: 76px;
+    height: 5px;
+    border-radius: 3px;
+    background: rgba(255,255,255,.08);
+    overflow: hidden;
+  }
+  .gauge > i {
+    display: block;
+    height: 100%;
+    width: 0%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--signal), var(--gold));
+  }
+
+  .handle:focus-visible { outline: 2px solid var(--signal); outline-offset: 4px; border-radius: 8px; }
+
+  @media (max-width: 640px) {
+    .lights { display: none; }
+    .stage { flex-basis: 100%; padding: 10px 10px 12px; }
+    .title { font-size: 18px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .lights::before { animation: none; opacity: .4; }
+    .jackpot::before { animation: none; }
+    .jackpot span { animation: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="cabinet">
+    <div class="lights lights-l" aria-hidden="true"></div>
+
+    <div class="stage">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Pachinko</p>
+          <h2 class="title">デジパチ <b>777</b></h2>
+        </div>
+        <div class="stats">
+          <div class="stat"><span class="stat-num" id="s-balls">100</span><span class="stat-label">玉</span></div>
+          <div class="stat"><span class="stat-num gold" id="s-hits">0</span><span class="stat-label">大当り</span></div>
+        </div>
+      </header>
+
+      <div class="board-wrap">
+        <canvas id="board"></canvas>
+        <div class="jackpot" id="jackpot" aria-hidden="true"><span>大当たり</span></div>
+      </div>
+
+      <footer class="controls">
+        <p class="hint" id="hint">ハンドルを<b>長押し</b>して離すと発射。中央の<b>チャッカー</b>を狙って777を揃えろ。</p>
+        <div class="handle" id="handle" role="button" tabindex="0" aria-label="発射ハンドル（長押しでチャージ）">
+          <div class="knob"><span class="knob-label" id="knob-label">打つ</span></div>
+          <div class="gauge"><i id="gauge-fill"></i></div>
+        </div>
+      </footer>
+    </div>
+
+    <div class="lights lights-r" aria-hidden="true"></div>
+  </div>
+
+<script>
+(function () {
+  "use strict";
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---- DOM ----
+  const cv = document.getElementById("board");
+  const ctx = cv.getContext("2d");
+  const elBalls = document.getElementById("s-balls");
+  const elHits  = document.getElementById("s-hits");
+  const elHint  = document.getElementById("hint");
+  const handle  = document.getElementById("handle");
+  const knob    = handle.querySelector(".knob");
+  const knobLabel = document.getElementById("knob-label");
+  const gaugeFill = document.getElementById("gauge-fill");
+  const jackpotEl = document.getElementById("jackpot");
+
+  // ---- 論理盤面サイズ ----
+  const W = 380, H = 540;
+  const G = 0.17;                 // 重力
+  const BALL_R = 6;
+
+  // ---- 状態 ----
+  let balls = 100;               // 持ち玉
+  let hits = 0;                  // 大当り回数
+  let displayBalls = 100;        // 表示用（+分をなめらかに）
+  const live = [];               // 盤面上の玉
+  let shake = 0;                 // 画面揺れ
+  let jackpotUntil = 0;          // 大当り演出の終了時刻
+  const now = () => performance.now();
+
+  // ---- ピン配置 ----
+  const pins = [];
+  (function buildPins() {
+    const top = 176, bottom = 424, dx = 40, dy = 34;
+    let row = 0;
+    for (let y = top; y <= bottom; y += dy, row++) {
+      const off = (row % 2) ? dx / 2 : 0;
+      for (let x = 40 + off; x <= W - 40; x += dx) {
+        // チャッカー直上に落とし込む通路を空ける
+        if (Math.abs(x - 190) < 9 && y > 392) continue;
+        pins.push({ x, y, r: 4.4 });
+      }
+    }
+    // チャッカーへ導くファネル（風車代わりの誘導釘）
+    pins.push({ x: 166, y: 430, r: 5 }, { x: 214, y: 430, r: 5 });
+    pins.push({ x: 150, y: 408, r: 4.4 }, { x: 230, y: 408, r: 4.4 });
+  })();
+
+  // ---- チャッカー（始動口） ----
+  const chak = { x: 190, y: 452, w: 46, h: 16 };
+
+  // ---- デジタル（リール） ----
+  const reels = [mkReel(), mkReel(), mkReel()];
+  let spinning = false;
+  function mkReel() { return { val: 7, spinning: false, stopAt: 0, settle: 0, result: 7, blur: 0 }; }
+
+  function startSpin() {
+    if (spinning) return;
+    spinning = true;
+    // 抽選：約16%で大当り（ゾロ目）
+    const jackpot = Math.random() < 0.16;
+    let res;
+    if (jackpot) {
+      const s = Math.random() < 0.6 ? 7 : (Math.random() * 10 | 0);
+      res = [s, s, s];
+    } else {
+      res = [rndDigit(), rndDigit(), rndDigit()];
+      // 偶然ゾロ目になったら崩す
+      if (res[0] === res[1] && res[1] === res[2]) res[2] = (res[2] + 1) % 10;
+      // 6割の確率でリーチ演出（左2つ揃い）
+      if (Math.random() < 0.6) { res[1] = res[0]; if (res[2] === res[0]) res[2] = (res[0] + 1) % 10; }
+    }
+    const t = now();
+    reels.forEach((r, i) => {
+      r.spinning = true;
+      r.result = res[i];
+      r.stopAt = t + 620 + i * 340;   // 左→右へ順に停止
+      r.blur = 1;
+    });
+  }
+  function rndDigit() { return Math.random() * 10 | 0; }
+
+  function evaluate() {
+    spinning = false;
+    if (reels[0].val === reels[1].val && reels[1].val === reels[2].val) {
+      // 大当たり！
+      hits++;
+      elHits.textContent = hits;
+      balls += 300;
+      jackpotUntil = now() + 2600;
+      jackpotEl.classList.add("on");
+      shake = reduced ? 4 : 16;
+      elHint.classList.add("win");
+      elHint.innerHTML = "<b>大当たり！</b> +300玉。ラッシュ突入、そのまま打ち込め。";
+      const n = reduced ? 14 : 40;
+      for (let i = 0; i < n; i++) {
+        live.push({
+          x: 20 + Math.random() * (W - 40), y: -10 - Math.random() * 120,
+          vx: (Math.random() - 0.5) * 3, vy: 1 + Math.random() * 2,
+          r: BALL_R, chute: false, cel: true
+        });
+      }
+      setTimeout(() => { jackpotEl.classList.remove("on"); }, 2600);
+    }
+  }
+
+  // ---- 発射 ----
+  function fire(power) {
+    if (balls <= 0) { refill(); return; }
+    balls--;
+    live.push({ x: 360, y: 512, vx: 0, vy: -(9.5 + power * 3.6), r: BALL_R, chute: true, power, cel: false });
+    if (!elHint.classList.contains("win")) {
+      elHint.innerHTML = "ハンドルを<b>長押し</b>して離すと発射。中央の<b>チャッカー</b>を狙って777を揃えろ。";
+    }
+  }
+  function refill() {
+    balls = 100;
+    elHint.classList.remove("win");
+    elHint.innerHTML = "玉を補給した。<b>ハンドル</b>を長押しして離すと発射。";
+  }
+
+  // ---- チャージ（ハンドル） ----
+  let charging = false, chargeStart = 0, power = 0;
+  function beginCharge() {
+    if (balls <= 0) { refill(); return; }
+    if (charging) return;
+    charging = true; chargeStart = now();
+    knobLabel.textContent = "…";
+  }
+  function endCharge() {
+    if (!charging) return;
+    charging = false;
+    // ごく短いタップ（長押ししていない）は狙いやすい中パワーで発射
+    const held = now() - chargeStart;
+    fire(held < 130 ? 0.62 : power);
+    power = 0;
+    knob.style.setProperty("--rot", "0deg");
+    gaugeFill.style.width = "0%";
+    knobLabel.textContent = "打つ";
+  }
+  function tapFire() {
+    // クリック等の短押し向けフォールバック
+    if (!charging) fire(0.55);
+  }
+
+  // pointer（マウス/タッチ両対応）
+  handle.addEventListener("pointerdown", (e) => { e.preventDefault(); handle.setPointerCapture?.(e.pointerId); beginCharge(); });
+  handle.addEventListener("pointerup",   (e) => { e.preventDefault(); endCharge(); });
+  handle.addEventListener("pointercancel", () => { if (charging) { charging = false; power = 0; gaugeFill.style.width = "0%"; knobLabel.textContent = "打つ"; } });
+  // キーボード
+  handle.addEventListener("keydown", (e) => {
+    if ((e.key === " " || e.key === "Enter") && !e.repeat) { e.preventDefault(); beginCharge(); }
+  });
+  handle.addEventListener("keyup", (e) => {
+    if (e.key === " " || e.key === "Enter") { e.preventDefault(); endCharge(); }
+  });
+  // ページ全体のスペースでも撃てるように（ハンドルにフォーカスが無くても）
+  addEventListener("keydown", (e) => {
+    if (e.code === "Space" && e.target === document.body && !e.repeat) { e.preventDefault(); beginCharge(); }
+  });
+  addEventListener("keyup", (e) => {
+    if (e.code === "Space" && e.target === document.body) { e.preventDefault(); endCharge(); }
+  });
+
+  // ---- 物理更新 ----
+  function step() {
+    for (let i = live.length - 1; i >= 0; i--) {
+      const b = live[i];
+
+      if (b.chute) {
+        // 発射レール：xを固定し上昇、頂点付近で盤面へ放出（パワーで飛距離が変わる）
+        b.vy += G; b.y += b.vy;
+        if (b.y <= 130 || b.vy >= 0) { b.chute = false; b.vx = -(2.2 + b.power * 2.2); }
+        continue;
+      }
+
+      b.vy += G;
+      b.x += b.vx; b.y += b.vy;
+
+      // 壁
+      if (b.x < 8 + b.r) { b.x = 8 + b.r; b.vx = -b.vx * 0.55; }
+      if (b.x > W - 8 - b.r) { b.x = W - 8 - b.r; b.vx = -b.vx * 0.55; }
+      if (b.y < 40 + b.r) { b.y = 40 + b.r; b.vy = -b.vy * 0.55; }
+
+      // ピン衝突
+      if (!b.cel) {
+        for (let p = 0; p < pins.length; p++) {
+          const pin = pins[p];
+          const dx = b.x - pin.x, dy = b.y - pin.y;
+          const rr = b.r + pin.r;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < rr * rr) {
+            const d = Math.sqrt(d2) || 0.001;
+            const nx = dx / d, ny = dy / d;
+            b.x = pin.x + nx * rr; b.y = pin.y + ny * rr;
+            const vn = b.vx * nx + b.vy * ny;
+            b.vx -= 1.5 * vn * nx; b.vy -= 1.5 * vn * ny;
+            b.vx *= 0.72; b.vy *= 0.72;
+            b.vx += (Math.random() - 0.5) * 0.5;   // 散らし
+          }
+        }
+        // チャッカー通過判定
+        if (b.vy > 0 && b.y > chak.y - 6 && b.y < chak.y + chak.h &&
+            Math.abs(b.x - chak.x) < chak.w / 2 - 3) {
+          live.splice(i, 1);
+          startSpin();
+          continue;
+        }
+      }
+
+      // 盤外（アウト）
+      if (b.y > H + 20 || b.x < -20 || b.x > W + 20) live.splice(i, 1);
+    }
+
+    // リール停止処理
+    const t = now();
+    let anySpin = false;
+    for (const r of reels) {
+      if (r.spinning) {
+        anySpin = true;
+        if (t >= r.stopAt) { r.spinning = false; r.val = r.result; r.settle = 1; r.blur = 0; }
+        else { if (Math.floor(t / 45) % 1 === 0) r.val = rndDigit(); r.blur = 1; }
+      }
+      if (r.settle > 0) r.settle = Math.max(0, r.settle - 0.06);
+    }
+    if (spinning && !anySpin) evaluate();
+
+    // 玉数表示のなめらか反映
+    displayBalls += (balls - displayBalls) * 0.2;
+    if (Math.abs(displayBalls - balls) < 0.5) displayBalls = balls;
+    elBalls.textContent = Math.round(displayBalls);
+
+    // 玉切れUI
+    if (balls <= 0 && !charging) knobLabel.textContent = "補給";
+    else if (!charging) knobLabel.textContent = "打つ";
+
+    // チャージ（三角波でパワーが行き来 → 離した瞬間の値で発射）
+    if (charging) {
+      const ph = ((now() - chargeStart) / 780) % 2;
+      power = ph < 1 ? ph : 2 - ph;   // 0→1→0…
+      gaugeFill.style.width = (power * 100).toFixed(0) + "%";
+      knob.style.setProperty("--rot", (power * 100 - 50).toFixed(0) + "deg");
+    }
+
+    if (shake > 0) shake *= 0.86;
+    if (shake < 0.3) shake = 0;
+  }
+
+  // ---- 描画 ----
+  function draw() {
+    const s = scale;
+    ctx.setTransform(s, 0, 0, s, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    // 揺れ
+    if (shake > 0) ctx.translate((Math.random() - 0.5) * shake, (Math.random() - 0.5) * shake);
+
+    // フェルト盤面
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, "#0a1730"); g.addColorStop(1, "#050a16");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, W, H);
+
+    // 大当り中は盤面をゴールドに染める
+    if (now() < jackpotUntil) {
+      ctx.fillStyle = "rgba(245,197,66," + (0.06 + 0.05 * Math.sin(now() / 90)) + ")";
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // 発射レール（右）
+    ctx.strokeStyle = "rgba(120,150,255,.35)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(372, H); ctx.lineTo(372, 150);
+    ctx.quadraticCurveTo(372, 70, 300, 58);
+    ctx.stroke();
+
+    drawReels();
+
+    // ピン
+    for (const p of pins) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.r, 0, 7);
+      ctx.fillStyle = "#c7cdd8";
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(p.x - 1, p.y - 1, p.r * 0.45, 0, 7);
+      ctx.fillStyle = "rgba(255,255,255,.85)";
+      ctx.fill();
+    }
+
+    // チャッカー
+    drawChakker();
+
+    // 玉
+    for (const b of live) drawBall(b);
+
+    // 発射位置のガイド玉
+    if (balls > 0) {
+      ctx.globalAlpha = 0.5;
+      drawBall({ x: 360, y: 512, r: BALL_R });
+      ctx.globalAlpha = 1;
+    }
+  }
+
+  function drawBall(b) {
+    const grd = ctx.createRadialGradient(b.x - 2, b.y - 2.5, 0.5, b.x, b.y, b.r);
+    grd.addColorStop(0, "#ffffff");
+    grd.addColorStop(0.4, b.cel ? "#ffe89a" : "#dfe4ec");
+    grd.addColorStop(1, b.cel ? "#c9962a" : "#7c8492");
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, 7);
+    ctx.fillStyle = grd;
+    ctx.fill();
+  }
+
+  function drawChakker() {
+    const { x, y, w } = chak;
+    // ポケット
+    roundRect(x - w / 2, y - 4, w, 20, 5);
+    ctx.fillStyle = "rgba(47,92,255,.18)";
+    ctx.fill();
+    // 左右のツメ
+    ctx.fillStyle = "#2F5CFF";
+    for (const sx of [x - w / 2, x + w / 2 - 6]) {
+      roundRect(sx, y - 6, 6, 16, 2); ctx.fill();
+    }
+    // 光る縁
+    ctx.strokeStyle = "rgba(120,150,255,.7)";
+    ctx.lineWidth = 1.5;
+    roundRect(x - w / 2, y - 4, w, 20, 5); ctx.stroke();
+    // ラベル
+    ctx.fillStyle = "rgba(200,210,235,.65)";
+    ctx.font = "700 8px " + mono();
+    ctx.textAlign = "center";
+    ctx.fillText("チャッカー", x, y + 26);
+    ctx.textAlign = "left";
+  }
+
+  function drawReels() {
+    const cx = 190, top = 70, cellW = 44, cellH = 58, gap = 3;
+    const totalW = cellW * 3 + gap * 2;
+    const left = cx - totalW / 2;
+    const win = now() < jackpotUntil;
+
+    // 枠
+    ctx.fillStyle = "#0a0d14";
+    roundRect(left - 7, top - 7, totalW + 14, cellH + 14, 8); ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = win ? "#F5C542" : "rgba(120,150,255,.55)";
+    roundRect(left - 7, top - 7, totalW + 14, cellH + 14, 8); ctx.stroke();
+
+    for (let i = 0; i < 3; i++) {
+      const r = reels[i];
+      const x = left + i * (cellW + gap);
+      // セル背景
+      ctx.fillStyle = "#03060d";
+      roundRect(x, top, cellW, cellH, 5); ctx.fill();
+
+      // 数字
+      const settleY = r.settle * 8 * Math.sin(r.settle * 9);   // 停止時のバウンド
+      ctx.save();
+      ctx.beginPath(); roundRect(x, top, cellW, cellH, 5); ctx.clip();
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      const cyc = win && !r.spinning;
+      ctx.fillStyle = (r.val === 7 || cyc) ? "#F5C542" : "#e8edf7";
+      if (cyc) ctx.fillStyle = "#F5C542";
+      const midY = top + cellH / 2 + settleY;
+      ctx.font = "800 40px " + mono();
+      if (r.spinning) {
+        // モーションブラー（上下のゴースト）
+        ctx.globalAlpha = 0.25;
+        ctx.fillText(((r.val + 9) % 10), x + cellW / 2, midY - 34);
+        ctx.fillText(((r.val + 1) % 10), x + cellW / 2, midY + 34);
+        ctx.globalAlpha = 0.8;
+      }
+      ctx.fillText(r.val, x + cellW / 2, midY);
+      ctx.globalAlpha = 1;
+      ctx.restore();
+    }
+    ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  }
+
+  // ---- ユーティリティ ----
+  function roundRect(x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.arcTo(x + w, y, x + w, y + h, r);
+    ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r);
+    ctx.arcTo(x, y, x + w, y, r);
+    ctx.closePath();
+  }
+  function mono() { return '"SF Mono", Menlo, Consolas, monospace'; }
+
+  // ---- リサイズ / DPR ----
+  let scale = 1;
+  function resize() {
+    const wrap = cv.parentElement;
+    const availW = wrap.clientWidth, availH = wrap.clientHeight;
+    if (availW <= 0 || availH <= 0) return;
+    const A = W / H;
+    let w, h;
+    if (availW / availH > A) { h = availH; w = h * A; }
+    else { w = availW; h = w / A; }
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    cv.style.width = w + "px"; cv.style.height = h + "px";
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    scale = cv.width / W;
+  }
+  const ro = new ResizeObserver(resize);
+  ro.observe(cv.parentElement);
+  resize();
+
+  // ---- メインループ ----
+  function loop() { step(); draw(); requestAnimationFrame(loop); }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

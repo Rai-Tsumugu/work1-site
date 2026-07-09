@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ドット絵エディタ</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: system-ui, sans-serif;
+      background: #1e1e1e;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    header {
+      width: 100%;
+      padding: 16px;
+      background: #2b2b2b;
+      text-align: center;
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      background: #252525;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    button, input, select {
+      font-size: 15px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      border: none;
+    }
+
+    button {
+      cursor: pointer;
+      background: #444;
+      color: white;
+    }
+
+    button:hover {
+      background: #666;
+    }
+
+    .active {
+      background: #008cff;
+    }
+
+    #canvasWrapper {
+      margin: 20px;
+      background: #333;
+      padding: 16px;
+      border-radius: 12px;
+      overflow: auto;
+      max-width: 95vw;
+      max-height: 75vh;
+    }
+
+    canvas {
+      image-rendering: pixelated;
+      background: white;
+      cursor: crosshair;
+    }
+
+    .info {
+      color: #bbb;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <header>ドット絵エディタ</header>
+
+  <div class="toolbar">
+    <label>
+      色:
+      <input type="color" id="colorPicker" value="#000000">
+    </label>
+
+    <button id="penBtn" class="active">ペン</button>
+    <button id="eraserBtn">消しゴム</button>
+    <button id="fillBtn">塗りつぶし</button>
+
+    <label>
+      サイズ:
+      <select id="sizeSelect">
+        <option value="16">16 × 16</option>
+        <option value="24">24 × 24</option>
+        <option value="32" selected>32 × 32</option>
+        <option value="48">48 × 48</option>
+        <option value="64">64 × 64</option>
+      </select>
+    </label>
+
+    <button id="gridBtn">グリッドON</button>
+    <button id="clearBtn">全消去</button>
+    <button id="downloadBtn">PNG保存</button>
+  </div>
+
+  <div id="canvasWrapper">
+    <canvas id="pixelCanvas"></canvas>
+  </div>
+
+  <div class="info">
+    左クリック・ドラッグで描画できます。
+  </div>
+
+  <script>
+    const canvas = document.getElementById("pixelCanvas");
+    const ctx = canvas.getContext("2d");
+
+    const colorPicker = document.getElementById("colorPicker");
+    const penBtn = document.getElementById("penBtn");
+    const eraserBtn = document.getElementById("eraserBtn");
+    const fillBtn = document.getElementById("fillBtn");
+    const sizeSelect = document.getElementById("sizeSelect");
+    const gridBtn = document.getElementById("gridBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
+
+    let gridSize = 32;
+    let pixelSize = 16;
+    let tool = "pen";
+    let showGrid = false;
+    let isDrawing = false;
+
+    let pixels = [];
+
+    function initCanvas(size) {
+      gridSize = size;
+      pixelSize = Math.floor(Math.min(640 / gridSize, 24));
+
+      canvas.width = gridSize * pixelSize;
+      canvas.height = gridSize * pixelSize;
+
+      pixels = Array.from({ length: gridSize }, () =>
+        Array.from({ length: gridSize }, () => "#ffffff")
+      );
+
+      drawCanvas();
+    }
+
+    function drawCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+          ctx.fillStyle = pixels[y][x];
+          ctx.fillRect(x * pixelSize, y * pixelSize, pixelSize, pixelSize);
+        }
+      }
+
+      if (showGrid) {
+        drawGrid();
+      }
+    }
+
+    function drawGrid() {
+      ctx.strokeStyle = "rgba(0, 0, 0, 0.25)";
+      ctx.lineWidth = 1;
+
+      for (let i = 0; i <= gridSize; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * pixelSize, 0);
+        ctx.lineTo(i * pixelSize, canvas.height);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, i * pixelSize);
+        ctx.lineTo(canvas.width, i * pixelSize);
+        ctx.stroke();
+      }
+    }
+
+    function getPixelPosition(event) {
+      const rect = canvas.getBoundingClientRect();
+      const x = Math.floor((event.clientX - rect.left) / pixelSize);
+      const y = Math.floor((event.clientY - rect.top) / pixelSize);
+
+      return { x, y };
+    }
+
+    function paintPixel(event) {
+      const { x, y } = getPixelPosition(event);
+
+      if (x < 0 || y < 0 || x >= gridSize || y >= gridSize) return;
+
+      if (tool === "pen") {
+        pixels[y][x] = colorPicker.value;
+      } else if (tool === "eraser") {
+        pixels[y][x] = "#ffffff";
+      } else if (tool === "fill") {
+        const targetColor = pixels[y][x];
+        const newColor = colorPicker.value;
+
+        if (targetColor !== newColor) {
+          floodFill(x, y, targetColor, newColor);
+        }
+      }
+
+      drawCanvas();
+    }
+
+    function floodFill(startX, startY, targetColor, newColor) {
+      const stack = [{ x: startX, y: startY }];
+
+      while (stack.length > 0) {
+        const { x, y } = stack.pop();
+
+        if (x < 0 || y < 0 || x >= gridSize || y >= gridSize) continue;
+        if (pixels[y][x] !== targetColor) continue;
+
+        pixels[y][x] = newColor;
+
+        stack.push({ x: x + 1, y });
+        stack.push({ x: x - 1, y });
+        stack.push({ x, y: y + 1 });
+        stack.push({ x, y: y - 1 });
+      }
+    }
+
+    function setTool(newTool) {
+      tool = newTool;
+
+      penBtn.classList.remove("active");
+      eraserBtn.classList.remove("active");
+      fillBtn.classList.remove("active");
+
+      if (newTool === "pen") penBtn.classList.add("active");
+      if (newTool === "eraser") eraserBtn.classList.add("active");
+      if (newTool === "fill") fillBtn.classList.add("active");
+    }
+
+    canvas.addEventListener("mousedown", (event) => {
+      isDrawing = true;
+      paintPixel(event);
+    });
+
+    canvas.addEventListener("mousemove", (event) => {
+      if (isDrawing && tool !== "fill") {
+        paintPixel(event);
+      }
+    });
+
+    window.addEventListener("mouseup", () => {
+      isDrawing = false;
+    });
+
+    penBtn.addEventListener("click", () => setTool("pen"));
+    eraserBtn.addEventListener("click", () => setTool("eraser"));
+    fillBtn.addEventListener("click", () => setTool("fill"));
+
+    gridBtn.addEventListener("click", () => {
+      showGrid = !showGrid;
+      gridBtn.textContent = showGrid ? "グリッドOFF" : "グリッドON";
+      drawCanvas();
+    });
+
+    clearBtn.addEventListener("click", () => {
+      if (!confirm("すべて消去しますか？")) return;
+
+      pixels = Array.from({ length: gridSize }, () =>
+        Array.from({ length: gridSize }, () => "#ffffff")
+      );
+
+      drawCanvas();
+    });
+
+    sizeSelect.addEventListener("change", () => {
+      const newSize = Number(sizeSelect.value);
+
+      if (!confirm("サイズを変更すると現在の絵は消えます。変更しますか？")) {
+        sizeSelect.value = gridSize;
+        return;
+      }
+
+      initCanvas(newSize);
+    });
+
+    downloadBtn.addEventListener("click", () => {
+      const exportCanvas = document.createElement("canvas");
+      const exportCtx = exportCanvas.getContext("2d");
+
+      exportCanvas.width = gridSize;
+      exportCanvas.height = gridSize;
+
+      for (let y = 0; y < gridSize; y++) {
+        for (let x = 0; x < gridSize; x++) {
+          exportCtx.fillStyle = pixels[y][x];
+          exportCtx.fillRect(x, y, 1, 1);
+        }
+      }
+
+      const link = document.createElement("a");
+      link.download = "pixel-art.png";
+      link.href = exportCanvas.toDataURL("image/png");
+      link.click();
+    });
+
+    initCanvas(gridSize);
+  </script>
+</body>
+</html>
