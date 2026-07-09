@@ -77,7 +77,7 @@
 </head>
 <body>
   <p class="eyebrow">Omikuji</p>
-  <h2>今日のおみくじ</h2>
+  <h2 id="random">今日のおみくじ</h2>
   <p class="lead">ボタンを押すと結果が出ます。何度でも引き直せます。</p>
   <button onclick="draw()">おみくじを引く</button>
   <div id="result"></div>
@@ -85,6 +85,11 @@
   <script>
     const OMIKUJI = ["大吉", "中吉", "小吉", "吉", "末吉", "凶", "末光"];
 
+    const randomEl = document.getElementById('random');
+    randomEl.addEventListener('click', () => {
+      const pick = OMIKUJI[Math.floor(Math.random() * OMIKUJI.length)];
+      randomEl.textContent = `今日のおみくじ: ${pick}`;
+    });
     function draw() {
       const pick = OMIKUJI[Math.floor(Math.random() * OMIKUJI.length)];
       const el = document.getElementById('result');
