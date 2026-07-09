@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>テトリス</title>
+<style>
+  :root {
+    --ink: #14161A;
+    --paper: #FAFAF8;
+    --mist: #F0F0EE;
+    --line: #DEDDD8;
+    --signal: #2F5CFF;
+    --muted: #6B6B66;
+    --font-body: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    height: 100%;
+  }
+  body {
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--paper);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px 16px 32px;
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin: 0 0 8px;
+  }
+  h2 {
+    margin: 0 0 20px;
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .layout {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .board-wrap {
+    background: #1e1e1e;
+    padding: 10px;
+    border-radius: 8px;
+    line-height: 0;
+    position: relative;
+    outline: none;
+  }
+  #board {
+    display: block;
+    image-rendering: pixelated;
+    border-radius: 4px;
+  }
+  .overlay {
+    position: absolute;
+    inset: 10px;
+    background: rgba(20, 22, 26, 0.82);
+    color: #fff;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    border-radius: 4px;
+    text-align: center;
+    padding: 16px;
+  }
+  .overlay.show { display: flex; }
+  .overlay p {
+    margin: 0;
+    font-size: 14px;
+    color: #cfcfcf;
+  }
+  .side {
+    width: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .panel {
+    background: var(--mist);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  .panel-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin: 0 0 6px;
+  }
+  .panel-value {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--signal);
+  }
+  #next {
+    display: block;
+    margin: 0 auto;
+    image-rendering: pixelated;
+  }
+  button {
+    appearance: none;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 16px;
+    border-radius: 4px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
+    cursor: pointer;
+    transition: opacity 0.15s ease;
+  }
+  button:hover { opacity: 0.8; }
+  button:active { opacity: 0.6; }
+  button.ghost {
+    background: transparent;
+    color: var(--ink);
+  }
+  .controls-hint {
+    font-size: 12px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .touch-pad {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+  .touch-pad button {
+    padding: 10px 0;
+    font-size: 13px;
+  }
+</style>
+</head>
+<body>
+  <p class="eyebrow">Mini game</p>
+  <h2>テトリス</h2>
+
+  <div class="layout">
+    <div class="board-wrap" id="boardWrap" tabindex="0">
+      <canvas id="board" width="200" height="400"></canvas>
+      <div class="overlay" id="overlay">
+        <p id="overlayText">クリックしてスタート</p>
+        <button id="overlayBtn">スタート</button>
+      </div>
+    </div>
+
+    <div class="side">
+      <div class="panel">
+        <p class="panel-label">Score</p>
+        <p class="panel-value" id="score">0</p>
+      </div>
+      <div class="panel">
+        <p class="panel-label">Lines</p>
+        <p class="panel-value" id="lines">0</p>
+      </div>
+      <div class="panel">
+        <p class="panel-label">Next</p>
+        <canvas id="next" width="80" height="80"></canvas>
+      </div>
+      <button id="pauseBtn" class="ghost">一時停止</button>
+      <p class="controls-hint">
+        ← → : 移動<br>
+        ↑ : 回転<br>
+        ↓ : ソフトドロップ<br>
+        Space : ハードドロップ
+      </p>
+      <div class="touch-pad">
+        <button data-act="left">←</button>
+        <button data-act="rotate">⟳</button>
+        <button data-act="right">→</button>
+        <button data-act="down">↓</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const COLS = 10;
+    const ROWS = 20;
+    const CELL = 20;
+
+    const board = document.getElementById('board');
+    const ctx = board.getContext('2d');
+    const nextCanvas = document.getElementById('next');
+    const nextCtx = nextCanvas.getContext('2d');
+    const scoreEl = document.getElementById('score');
+    const linesEl = document.getElementById('lines');
+    const overlay = document.getElementById('overlay');
+    const overlayText = document.getElementById('overlayText');
+    const overlayBtn = document.getElementById('overlayBtn');
+    const pauseBtn = document.getElementById('pauseBtn');
+    const boardWrap = document.getElementById('boardWrap');
+
+    const COLORS = {
+      I: '#2fd8e0',
+      J: '#3b6fe0',
+      L: '#e0a13b',
+      O: '#e0d63b',
+      S: '#3be05a',
+      T: '#a13be0',
+      Z: '#e03b52'
+    };
+
+    const SHAPES = {
+      I: [[0,1],[1,1],[2,1],[3,1]],
+      J: [[0,0],[0,1],[1,1],[2,1]],
+      L: [[2,0],[0,1],[1,1],[2,1]],
+      O: [[1,0],[2,0],[1,1],[2,1]],
+      S: [[1,0],[2,0],[0,1],[1,1]],
+      T: [[1,0],[0,1],[1,1],[2,1]],
+      Z: [[0,0],[1,0],[1,1],[2,1]]
+    };
+
+    const TYPES = Object.keys(SHAPES);
+
+    let grid, current, nextType, score, lines, dropInterval, dropTimer, gameOver, paused, running;
+
+    function emptyGrid() {
+      return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+    }
+
+    function randomType() {
+      return TYPES[Math.floor(Math.random() * TYPES.length)];
+    }
+
+    function makePiece(type) {
+      return {
+        type,
+        cells: SHAPES[type].map(([x, y]) => ({ x, y })),
+        x: 3,
+        y: -1
+      };
+    }
+
+    function rotateCells(cells) {
+      // 回転中心をブロック群のバウンディングボックス中心として近似回転
+      const size = 4;
+      return cells.map(({ x, y }) => ({ x: size - 1 - y, y: x }));
+    }
+
+    function cellPositions(piece) {
+      return piece.cells.map(c => ({ x: piece.x + c.x, y: piece.y + c.y }));
+    }
+
+    function collides(piece, offsetX = 0, offsetY = 0, cells = piece.cells) {
+      for (const c of cells) {
+        const x = piece.x + c.x + offsetX;
+        const y = piece.y + c.y + offsetY;
+        if (x < 0 || x >= COLS || y >= ROWS) return true;
+        if (y >= 0 && grid[y][x]) return true;
+      }
+      return false;
+    }
+
+    function lockPiece() {
+      for (const { x, y } of cellPositions(current)) {
+        if (y >= 0) grid[y][x] = current.type;
+      }
+      clearLines();
+      spawnPiece();
+    }
+
+    function clearLines() {
+      let cleared = 0;
+      for (let y = ROWS - 1; y >= 0; y--) {
+        if (grid[y].every(cell => cell)) {
+          grid.splice(y, 1);
+          grid.unshift(Array(COLS).fill(null));
+          cleared++;
+          y++;
+        }
+      }
+      if (cleared > 0) {
+        const points = [0, 100, 300, 500, 800];
+        score += points[cleared] || cleared * 200;
+        lines += cleared;
+        scoreEl.textContent = score;
+        linesEl.textContent = lines;
+        dropInterval = Math.max(120, 600 - Math.floor(lines / 10) * 50);
+      }
+    }
+
+    function spawnPiece() {
+      current = makePiece(nextType);
+      nextType = randomType();
+      drawNext();
+      if (collides(current)) {
+        endGame();
+      }
+    }
+
+    function move(dx) {
+      if (!collides(current, dx, 0)) {
+        current.x += dx;
+        draw();
+      }
+    }
+
+    function softDrop() {
+      if (!collides(current, 0, 1)) {
+        current.y += 1;
+        draw();
+      } else {
+        lockPiece();
+        draw();
+      }
+    }
+
+    function hardDrop() {
+      while (!collides(current, 0, 1)) {
+        current.y += 1;
+      }
+      lockPiece();
+      draw();
+    }
+
+    function rotate() {
+      const rotated = rotateCells(current.cells);
+      const kicks = [0, -1, 1, -2, 2];
+      for (const k of kicks) {
+        if (!collides(current, k, 0, rotated)) {
+          current.cells = rotated;
+          current.x += k;
+          draw();
+          return;
+        }
+      }
+    }
+
+    function drawCell(context, x, y, color, size) {
+      context.fillStyle = color;
+      context.fillRect(x * size, y * size, size - 1, size - 1);
+    }
+
+    function draw() {
+      ctx.fillStyle = '#111214';
+      ctx.fillRect(0, 0, board.width, board.height);
+
+      for (let y = 0; y < ROWS; y++) {
+        for (let x = 0; x < COLS; x++) {
+          if (grid[y][x]) drawCell(ctx, x, y, COLORS[grid[y][x]], CELL);
+        }
+      }
+
+      if (current) {
+        for (const { x, y } of cellPositions(current)) {
+          if (y >= 0) drawCell(ctx, x, y, COLORS[current.type], CELL);
+        }
+      }
+    }
+
+    function drawNext() {
+      nextCtx.fillStyle = '#111214';
+      nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+      const size = 16;
+      const cells = SHAPES[nextType];
+      const offsetX = (nextCanvas.width / size - 4) / 2;
+      for (const [x, y] of cells) {
+        drawCell(nextCtx, x + offsetX, y + 0.5, COLORS[nextType], size);
+      }
+    }
+
+    function tick() {
+      if (paused || gameOver) return;
+      softDrop();
+    }
+
+    function loop() {
+      dropTimer += 16;
+      if (dropTimer >= dropInterval) {
+        dropTimer = 0;
+        tick();
+      }
+      if (running) requestAnimationFrame(loop);
+    }
+
+    function startGame() {
+      grid = emptyGrid();
+      score = 0;
+      lines = 0;
+      dropInterval = 600;
+      dropTimer = 0;
+      gameOver = false;
+      paused = false;
+      running = true;
+      scoreEl.textContent = '0';
+      linesEl.textContent = '0';
+      pauseBtn.textContent = '一時停止';
+      nextType = randomType();
+      spawnPiece();
+      draw();
+      overlay.classList.remove('show');
+      boardWrap.focus();
+      requestAnimationFrame(loop);
+    }
+
+    function endGame() {
+      gameOver = true;
+      running = false;
+      overlayText.textContent = `ゲームオーバー（スコア: ${score}）`;
+      overlayBtn.textContent = 'もう一度';
+      overlay.classList.add('show');
+    }
+
+    function togglePause() {
+      if (gameOver) return;
+      paused = !paused;
+      pauseBtn.textContent = paused ? '再開' : '一時停止';
+      overlayText.textContent = '一時停止中';
+      overlayBtn.textContent = '再開';
+      overlay.classList.toggle('show', paused);
+      if (!paused) boardWrap.focus();
+    }
+
+    overlayBtn.addEventListener('click', () => {
+      if (paused) {
+        togglePause();
+      } else {
+        startGame();
+      }
+    });
+
+    pauseBtn.addEventListener('click', togglePause);
+
+    boardWrap.addEventListener('keydown', (e) => {
+      if (gameOver || paused || !running) {
+        if (e.code === 'Space' || e.code === 'Enter') startGame();
+        return;
+      }
+      switch (e.code) {
+        case 'ArrowLeft': move(-1); e.preventDefault(); break;
+        case 'ArrowRight': move(1); e.preventDefault(); break;
+        case 'ArrowDown': softDrop(); e.preventDefault(); break;
+        case 'ArrowUp': rotate(); e.preventDefault(); break;
+        case 'Space': hardDrop(); e.preventDefault(); break;
+      }
+    });
+
+    document.querySelectorAll('.touch-pad button').forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (gameOver || paused || !running) return;
+        const act = btn.dataset.act;
+        if (act === 'left') move(-1);
+        if (act === 'right') move(1);
+        if (act === 'down') softDrop();
+        if (act === 'rotate') rotate();
+        boardWrap.focus();
+      });
+    });
+
+    grid = emptyGrid();
+    draw();
+    overlayText.textContent = 'クリックしてスタート';
+    overlayBtn.textContent = 'スタート';
+    overlay.classList.add('show');
+  </script>
+</body>
+</html>
