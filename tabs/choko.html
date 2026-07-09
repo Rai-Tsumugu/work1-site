@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>1d100じゃんけん</title>
+<style>
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    color: #202124;
+    background: #f7f7f4;
+    padding: 32px 20px;
+  }
+
+  main {
+    width: min(100%, 520px);
+    margin: 0 auto;
+  }
+
+  h1 {
+    margin: 0 0 12px;
+    font-size: 28px;
+    line-height: 1.2;
+  }
+
+  .lead {
+    margin: 0 0 24px;
+    color: #5f6368;
+    font-size: 15px;
+    line-height: 1.7;
+  }
+
+  .dice-area {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .dice-box {
+    border: 1px solid #deded8;
+    background: #ffffff;
+    border-radius: 8px;
+    padding: 18px 14px;
+    text-align: center;
+  }
+
+  .label {
+    margin: 0 0 8px;
+    color: #5f6368;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .value {
+    margin: 0;
+    font-size: 36px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  button {
+    width: 100%;
+    appearance: none;
+    border: 1px solid #202124;
+    border-radius: 6px;
+    background: #202124;
+    color: #ffffff;
+    cursor: pointer;
+    font: inherit;
+    font-size: 16px;
+    font-weight: 700;
+    padding: 14px 18px;
+  }
+
+  button:hover {
+    opacity: 0.86;
+  }
+
+  button:active {
+    opacity: 0.72;
+  }
+
+  .result {
+    min-height: 3.2em;
+    margin: 20px 0 0;
+    border-left: 4px solid #2f5cff;
+    background: #ffffff;
+    padding: 14px 16px;
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1.6;
+  }
+
+  .note {
+    margin: 12px 0 0;
+    color: #5f6368;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+
+  @media (max-width: 420px) {
+    body {
+      padding: 24px 14px;
+    }
+
+    h1 {
+      font-size: 24px;
+    }
+
+    .dice-area {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+</head>
+<body>
+  <main>
+    <h1>1d100じゃんけん</h1>
+    <p class="lead">ボタンを押すと、あなたと相手がそれぞれ1〜100の値を得ます。値が小さい方の勝ちです。</p>
+
+    <div class="dice-area" aria-live="polite">
+      <section class="dice-box" aria-label="プレイヤーの出目">
+        <p class="label">プレイヤー</p>
+        <p class="value" id="player-value">--</p>
+      </section>
+      <section class="dice-box" aria-label="相手の出目">
+        <p class="label">相手</p>
+        <p class="value" id="enemy-value">--</p>
+      </section>
+    </div>
+
+    <button type="button" id="roll-button">1d100を振る</button>
+    <p class="result" id="result">まだ勝負していません。</p>
+    <p class="note">同じ値の場合はあいこです。何度でも振り直せます。</p>
+  </main>
+
+  <script>
+    const playerValue = document.getElementById("player-value");
+    const enemyValue = document.getElementById("enemy-value");
+    const result = document.getElementById("result");
+    const rollButton = document.getElementById("roll-button");
+
+    function rollD100() {
+      return Math.floor(Math.random() * 100) + 1;
+    }
+
+    function judge(player, enemy) {
+      if (player < enemy) {
+        return "あなたの勝ちです！";
+      }
+
+      if (player > enemy) {
+        return "相手の勝ちです。";
+      }
+
+      return "あいこです。";
+    }
+
+    rollButton.addEventListener("click", () => {
+      const player = rollD100();
+      const enemy = rollD100();
+
+      playerValue.textContent = player;
+      enemyValue.textContent = enemy;
+      result.textContent = judge(player, enemy);
+    });
+  </script>
+</body>
+</html>
