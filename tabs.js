@@ -6,10 +6,16 @@ const TABS = [
   { name: "見本: あいさつ", file: "tabs/_sample.html", author: "先生" },
   { name: "おみくじ", file: "tabs/omikuji.html", author: "先生" },
   { name: "割り勘計算", file: "tabs/warikan.html", author: "先生" },
+  { name: "早押しゲーム", file: "tabs/toya.html", author: "toya" },
   
   // ↓この下に追加
+  { name: "ネコペン・スパイア", file: "tabs/nekopen.html", author: "nekopen" },`r`n  
+  { name: "NEKO Spin", file: "tabs/nekopen2.html", author: "nekopen" },`r`n
+  { name: "パチンコ", file: "tabs/pachinko.html", author: "que" },
   { name: "ドット絵", file: "tabs/dot.html", author: "楽人" },
   { name: "テトリス", file: "tabs/tetris.html", author: "楽人" },
   { name: "ネコペン・スパイア", file: "tabs/nekopen.html", author: "nekopen" },
-  { name: "1d100じゃんけん", file: "tabs/choko.html", author: "choko" }
+  { name: "1d100じゃんけん", file: "tabs/choko.html", author: "choko" },
+  { name: "パンケーキタワー", file: "tabs/tumiki.html", author: "友里" }
 ];
+
