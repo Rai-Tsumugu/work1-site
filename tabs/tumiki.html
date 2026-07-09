@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>パンケーキタワー</title>
+
+<style>
+body{
+    margin:0;
+    background:#87CEEB;
+    font-family:sans-serif;
+    text-align:center;
+}
+
+h2{
+    margin:10px;
+}
+
+canvas{
+    background:linear-gradient(#87CEEB,#dff7ff);
+    border:2px solid #444;
+    display:block;
+    margin:10px auto;
+}
+
+#controls{
+    margin:10px;
+}
+
+button{
+    padding:10px 20px;
+    margin:5px;
+    font-size:18px;
+    cursor:pointer;
+}
+
+#score{
+    font-size:24px;
+    font-weight:bold;
+}
+
+#message{
+    font-size:36px;
+    color:red;
+    height:40px;
+}
+</style>
+
+</head>
+<body>
+
+<h2> パンケーキタワー </h2>
+
+<div id="score">Score : 0</div>
+
+<div id="controls">
+<button id="startBtn">スタート</button>
+<button id="dropBtn">積み上げる</button>
+<button id="resetBtn">リセット</button>
+</div>
+
+<div id="message"></div>
+
+<canvas id="game" width="500" height="600"></canvas>
+
+<script>
+
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+
+const PAN_HEIGHT=25;
+const GROUND=560;
+
+let running=false;
+let score=0;
+let tower=[];
+let current;
+
+function init(){
+
+score=0;
+running=false;
+
+document.getElementById("score").innerHTML="Score : 0";
+document.getElementById("message").innerHTML="";
+
+tower=[
+{
+x:150,
+y:GROUND,
+width:200
+}
+];
+
+current={
+x:0,
+y:GROUND-PAN_HEIGHT,
+width:200,
+dir:1,
+moving:false
+};
+
+}
+
+init();
+
+function drawPancake(x,y,w){
+
+ctx.beginPath();
+
+ctx.fillStyle="#f7c46c";
+
+ctx.ellipse(
+x+w/2,
+y+PAN_HEIGHT/2,
+w/2,
+PAN_HEIGHT/2,
+0,
+0,
+Math.PI*2
+);
+
+ctx.fill();
+
+ctx.strokeStyle="#9b6a22";
+ctx.stroke();
+
+}
+
+function draw(){
+
+ctx.clearRect(0,0,500,600);
+
+tower.forEach(p=>{
+drawPancake(p.x,p.y,p.width);
+});
+
+drawPancake(current.x,current.y,current.width);
+
+}
+
+function gameLoop(){
+
+draw();
+
+if(running && current.moving){
+
+current.x+=4*current.dir;
+
+if(current.x<0){
+current.dir=1;
+}
+
+if(current.x+current.width>500){
+current.dir=-1;
+}
+
+}
+
+requestAnimationFrame(gameLoop);
+
+}
+
+gameLoop();
+
+function startGame(){
+
+if(running)return;
+
+running=true;
+current.moving=true;
+
+}
+
+function drop(){
+
+if(!running)return;
+
+let last=tower[tower.length-1];
+
+let overlap=Math.min(
+current.x+current.width,
+last.x+last.width
+)-Math.max(current.x,last.x);
+
+if(overlap<=20){
+
+document.getElementById("message").innerHTML="GAME OVER";
+
+running=false;
+
+return;
+
+}
+
+current.width=overlap;
+current.x=Math.max(current.x,last.x);
+
+tower.push({
+x:current.x,
+y:last.y-PAN_HEIGHT,
+width:current.width
+});
+
+score++;
+
+document.getElementById("score").innerHTML="Score : "+score;
+
+current={
+x:0,
+y:last.y-PAN_HEIGHT,
+width:overlap,
+dir:1,
+moving:true
+};
+
+}
+
+document.getElementById("startBtn").onclick=startGame;
+
+document.getElementById("dropBtn").onclick=drop;
+
+document.getElementById("resetBtn").onclick=init;
+
+window.addEventListener("keydown",e=>{
+if(e.code==="Space"){
+drop();
+}
+});
+
+canvas.addEventListener("click",drop);
+
+</script>
+
+</body>
+</html>
