@@ -4,29 +4,72 @@
 <meta charset="UTF-8">
 <title>見本タブ</title>
 <style>
+  :root {
+    --ink: #14161A;
+    --paper: #FAFAF8;
+    --mist: #F0F0EE;
+    --line: #DEDDD8;
+    --signal: #2F5CFF;
+    --muted: #6B6B66;
+    --font-body: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
   body {
-    font-family: "Hiragino Sans", "Noto Sans JP", -apple-system, sans-serif;
-    padding: 32px;
-    text-align: center;
+    margin: 0;
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--paper);
+    padding: 48px 40px;
+  }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin: 0 0 8px;
+  }
+  h2 {
+    margin: 0 0 12px;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  p.lead {
+    margin: 0 0 28px;
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 32em;
   }
   button {
-    font-size: 18px;
+    appearance: none;
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 600;
     padding: 12px 24px;
-    border-radius: 8px;
-    border: none;
-    background: #FF5757;
-    color: white;
+    border-radius: 4px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
     cursor: pointer;
+    transition: opacity 0.15s ease;
   }
+  button:hover { opacity: 0.8; }
+  button:active { opacity: 0.6; }
   #msg {
     margin-top: 24px;
-    font-size: 20px;
+    font-size: 18px;
+    min-height: 1.4em;
+    color: var(--signal);
+    font-weight: 700;
   }
 </style>
 </head>
 <body>
+  <p class="eyebrow">Sample tab</p>
   <h2>これは見本タブです</h2>
-  <p>このファイル（tabs/_sample.html）をコピーして、自分のタブを作ってください。</p>
+  <p class="lead">このファイル（tabs/_sample.html）をコピーして、自分のタブを作ってください。</p>
   <button onclick="greet()">押してみる</button>
   <p id="msg"></p>
 
