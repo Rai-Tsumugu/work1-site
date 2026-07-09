@@ -4,39 +4,81 @@
 <meta charset="UTF-8">
 <title>おみくじ</title>
 <style>
+  :root {
+    --ink: #14161A;
+    --paper: #FAFAF8;
+    --mist: #F0F0EE;
+    --line: #DEDDD8;
+    --signal: #2F5CFF;
+    --muted: #6B6B66;
+    --font-body: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
   body {
-    font-family: "Hiragino Sans", "Noto Sans JP", -apple-system, sans-serif;
-    padding: 32px;
-    text-align: center;
-    background: #FFF7E7;
+    margin: 0;
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--paper);
+    padding: 48px 40px;
   }
-  h2 { margin-bottom: 8px; }
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin: 0 0 8px;
+  }
+  h2 {
+    margin: 0 0 12px;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  p.lead {
+    margin: 0 0 28px;
+    color: var(--muted);
+    font-size: 14px;
+    max-width: 32em;
+  }
   button {
-    font-size: 18px;
-    padding: 14px 28px;
-    border-radius: 8px;
-    border: none;
-    background: #FF5757;
-    color: white;
+    appearance: none;
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 12px 24px;
+    border-radius: 4px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
     cursor: pointer;
-    margin-top: 16px;
+    transition: opacity 0.15s ease;
   }
-  button:active {
-    transform: scale(0.97);
-  }
+  button:hover { opacity: 0.8; }
+  button:active { opacity: 0.6; }
   #result {
-    margin-top: 28px;
+    margin-top: 32px;
+    padding: 32px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: #FFFFFF;
     font-size: 40px;
-    font-weight: bold;
-    min-height: 56px;
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    min-height: 1.2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .kichi { color: #D18005; }
-  .kyo { color: #292929; opacity: 0.6; }
+  .kichi { color: var(--signal); }
+  .kyo { color: var(--muted); }
 </style>
 </head>
 <body>
+  <p class="eyebrow">Omikuji</p>
   <h2>今日のおみくじ</h2>
-  <p>ボタンを押すと結果が出ます。何度でも引き直せます。</p>
+  <p class="lead">ボタンを押すと結果が出ます。何度でも引き直せます。</p>
   <button onclick="draw()">おみくじを引く</button>
   <div id="result"></div>
 

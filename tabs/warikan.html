@@ -4,56 +4,121 @@
 <meta charset="UTF-8">
 <title>割り勘計算</title>
 <style>
+  :root {
+    --ink: #14161A;
+    --paper: #FAFAF8;
+    --mist: #F0F0EE;
+    --line: #DEDDD8;
+    --signal: #2F5CFF;
+    --muted: #6B6B66;
+    --font-body: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    --font-mono: "SF Mono", Menlo, Consolas, monospace;
+  }
+  * { box-sizing: border-box; }
   body {
-    font-family: "Hiragino Sans", "Noto Sans JP", -apple-system, sans-serif;
-    padding: 32px;
-    background: #FFF7E7;
+    margin: 0;
+    font-family: var(--font-body);
+    color: var(--ink);
+    background: var(--paper);
+    padding: 48px 40px;
   }
-  h2 { margin-bottom: 8px; }
-  .field {
-    margin: 16px 0;
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin: 0 0 8px;
   }
-  label {
-    display: block;
+  h2 {
+    margin: 0 0 12px;
+    font-size: 26px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  p.lead {
+    margin: 0 0 28px;
+    color: var(--muted);
     font-size: 14px;
-    margin-bottom: 4px;
+    max-width: 32em;
   }
-  input {
-    font-size: 18px;
-    padding: 8px 12px;
-    border: 2px solid #D18005;
-    border-radius: 6px;
-    width: 200px;
+  .fields {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+  .field label {
+    display: block;
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    color: var(--muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .field input {
+    font-family: var(--font-body);
+    font-size: 20px;
+    font-weight: 700;
+    padding: 10px 14px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    width: 180px;
+    color: var(--ink);
+    background: #FFFFFF;
+  }
+  .field input:focus {
+    outline: 2px solid var(--signal);
+    outline-offset: 1px;
+    border-color: var(--signal);
   }
   button {
-    font-size: 16px;
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    background: #FF5757;
-    color: white;
+    appearance: none;
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 600;
+    padding: 12px 24px;
+    border-radius: 4px;
+    border: 1px solid var(--ink);
+    background: var(--ink);
+    color: var(--paper);
     cursor: pointer;
-    margin-top: 8px;
+    transition: opacity 0.15s ease;
   }
+  button:hover { opacity: 0.8; }
+  button:active { opacity: 0.6; }
   #result {
-    margin-top: 24px;
-    font-size: 20px;
-    line-height: 1.8;
+    margin-top: 28px;
+    padding: 24px 28px;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: #FFFFFF;
+    font-size: 15px;
+    line-height: 2;
   }
-  .error { color: #FF5757; }
+  #result strong {
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--signal);
+  }
+  .error { color: #C4402A; }
 </style>
 </head>
 <body>
+  <p class="eyebrow">Warikan</p>
   <h2>割り勘計算</h2>
-  <p>合計金額と人数を入れてください。端数は幹事が多く払う想定で計算します。</p>
+  <p class="lead">合計金額と人数を入れてください。端数は幹事が多く払う想定で計算します。</p>
 
-  <div class="field">
-    <label for="total">合計金額（円）</label>
-    <input type="number" id="total" value="10000" min="0">
-  </div>
-  <div class="field">
-    <label for="people">人数</label>
-    <input type="number" id="people" value="3" min="1">
+  <div class="fields">
+    <div class="field">
+      <label for="total">合計金額（円）</label>
+      <input type="number" id="total" value="10000" min="0">
+    </div>
+    <div class="field">
+      <label for="people">人数</label>
+      <input type="number" id="people" value="3" min="1">
+    </div>
   </div>
 
   <button onclick="calc()">計算する</button>
