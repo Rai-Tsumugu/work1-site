@@ -10,6 +10,6 @@ const TABS = [
   // ↓この下に追加
   { name: "パチンコ", file: "tabs/pachinko.html", author: "que" },
   { name: "ドット絵", file: "tabs/dot.html", author: "楽人" },
-  { name: "テトリス", file: "tabs/tetris.html", author: "楽人" }
+  { name: "テトリス", file: "tabs/tetris.html", author: "楽人" },
   { name: "ネコペン・スパイア", file: "tabs/nekopen.html", author: "nekopen" },
 ];
