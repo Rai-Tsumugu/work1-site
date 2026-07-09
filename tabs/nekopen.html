@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ネコペン・スパイア</title>
+<style>
+  :root {
+    --ink: #15161a;
+    --paper: #fafaf8;
+    --panel: #ffffff;
+    --mist: #f0f0ee;
+    --line: #deddd8;
+    --signal: #2f5cff;
+    --danger: #c4402a;
+    --good: #17824a;
+    --muted: #6b6b66;
+    --font: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    --mono: "SF Mono", Menlo, Consolas, monospace;
+  }
+
+
+ 
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: var(--font);
+    color: var(--ink);
+    background: var(--paper);
+    padding: 28px;
+  }
+
+  .shell {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 18px;
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  .top {
+    grid-column: 1 / -1;
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 16px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 16px;
+  }
+
+  .eyebrow {
+    margin: 0 0 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 26px;
+    line-height: 1.15;
+    font-weight: 900;
+  }
+
+  .state-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  .arena {
+    display: grid;
+    gap: 14px;
+    min-width: 0;
+  }
+
+  .units {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 16px;
+    min-width: 0;
+  }
+
+  .head {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+
+  .name {
+    margin: 0;
+    font-size: 17px;
+    font-weight: 850;
+  }
+
+  .intent {
+    font-size: 12px;
+    color: var(--danger);
+    font-weight: 800;
+    text-align: right;
+  }
+
+  .hp {
+    height: 14px;
+    border-radius: 999px;
+    background: var(--mist);
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+
+  .fill {
+    height: 100%;
+    width: 100%;
+    background: var(--good);
+    transition: width 0.2s ease;
+  }
+
+  .stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--mist);
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 5px 7px;
+    white-space: nowrap;
+  }
+
+  .hand {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+    gap: 10px;
+  }
+
+  .card {
+    appearance: none;
+    min-height: 138px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--ink);
+    padding: 12px;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    transition: border-color 0.15s ease, transform 0.15s ease;
+  }
+
+  .card:hover:not(:disabled) {
+    border-color: var(--signal);
+    transform: translateY(-1px);
+  }
+
+  .card:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .card-title {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    font-weight: 900;
+  }
+
+  .cost {
+    display: inline-grid;
+    place-items: center;
+    min-width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    color: #fff;
+    background: var(--signal);
+    font-family: var(--mono);
+    font-size: 13px;
+  }
+
+  .desc {
+    margin: 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .side {
+    display: grid;
+    gap: 14px;
+    align-content: start;
+  }
+
+  .actions {
+    display: grid;
+    gap: 8px;
+  }
+
+  .cmd {
+    appearance: none;
+    border: 1px solid var(--ink);
+    border-radius: 4px;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--font);
+    font-size: 14px;
+    font-weight: 800;
+    padding: 11px 14px;
+    cursor: pointer;
+  }
+
+  .cmd.secondary {
+    background: #fff;
+    color: var(--ink);
+  }
+
+  .cmd:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+
+  .log {
+    height: 230px;
+    overflow: auto;
+    background: #101115;
+    color: #f4f4f0;
+    border-radius: 6px;
+    padding: 12px;
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+
+  .help {
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.65;
+    white-space: pre-wrap;
+  }
+
+  .result {
+    margin: 0;
+    font-weight: 900;
+    color: var(--signal);
+  }
+
+  @media (max-width: 760px) {
+    body { padding: 18px; }
+    .shell { grid-template-columns: 1fr; }
+    .units { grid-template-columns: 1fr; }
+    .top { align-items: start; flex-direction: column; }
+    .state-label { text-align: left; }
+  }
+</style>
+</head>
+<body>
+  <div class="shell">
+    <div class="top">
+      <div>
+        <p class="eyebrow">JavaScript card battle</p>
+        <h2>ネコペン・スパイア</h2>
+      </div>
+      <div class="state-label">HTML1ファイル完結</div>
+    </div>
+
+    <main class="arena">
+      <section class="units">
+        <article class="panel" aria-label="敵">
+          <div class="head">
+            <h3 class="name" id="enemy-name">ダミー</h3>
+            <span class="intent" id="enemy-intent">行動: -</span>
+          </div>
+          <div class="hp"><div class="fill" id="enemy-hpbar"></div></div>
+          <div class="stats" id="enemy-stats"></div>
+        </article>
+
+        <article class="panel" aria-label="プレイヤー">
+          <div class="head">
+            <h3 class="name" id="player-name">アイアンクラッド</h3>
+            <span class="intent" id="turn-label">ターン 1</span>
+          </div>
+          <div class="hp"><div class="fill" id="player-hpbar"></div></div>
+          <div class="stats" id="player-stats"></div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="head">
+          <h3 class="name">手札</h3>
+          <span class="intent" id="energy-label">エナジー: 3</span>
+        </div>
+        <div class="hand" id="hand"></div>
+      </section>
+    </main>
+
+    <aside class="side">
+      <section class="panel actions">
+        <button class="cmd" id="end-turn" type="button">ターン終了</button>
+        <button class="cmd secondary" id="new-game" type="button">最初から</button>
+        <button class="cmd secondary" id="help-button" type="button">ヘルプ</button>
+      </section>
+      <section class="panel"><div class="log" id="log"></div></section>
+      <section class="panel help" id="help" hidden></section>
+    </aside>
+  </div>
+
+<script>
+class Character {
+  constructor(name, maxHp) {
+    this.name = name;
+    this.maxHp = maxHp;
+    this.hp = maxHp;
+    this.block = 0;
+    this.vulnerable = 0;
+    this.strength = 0;
+  }
+
+  isAlive() {
+    return this.hp > 0;
+  }
+
+  addBlock(amount) {
+    this.block += amount;
+    addLog(`${this.name}は${amount}ブロックを得た`);
+  }
+
+  addVulnerable(turns) {
+    this.vulnerable += turns;
+    addLog(`${this.name}に弱体を${turns}ターン付与した`);
+  }
+
+  addStrength(amount) {
+    this.strength += amount;
+    addLog(`${this.name}は筋力を${amount}得た`);
+  }
+
+  calculateAttackDamage(baseDamage, target) {
+    let damage = baseDamage + this.strength;
+    if (target.vulnerable > 0) {
+      damage = Math.floor(damage * 1.5);
+    }
+    return damage;
+  }
+
+  takeDamage(damage) {
+    const blockedDamage = Math.min(this.block, damage);
+    const actualDamage = damage - blockedDamage;
+    this.block -= blockedDamage;
+    this.hp = Math.max(0, this.hp - actualDamage);
+    addLog(`${this.name}は${actualDamage}ダメージを受けた`);
+
+    if (blockedDamage > 0) {
+      addLog(`${blockedDamage}ブロックで${blockedDamage}ダメージを防いだ`);
+    }
+  }
+
+  decreaseStatuses() {
+    if (this.vulnerable > 0) {
+      this.vulnerable -= 1;
+    }
+  }
+}
+
+class Player extends Character {
+  constructor() {
+    super('アイアンクラッド', 80);
+    this.energy = 3;
+    this.deck = [];
+    this.hand = [];
+    this.discardPile = [];
+  }
+
+  resetForTurn() {
+    this.energy = 3;
+    this.block = 0;
+  }
+
+  drawCards(count) {
+    for (let i = 0; i < count; i += 1) {
+      if (this.deck.length === 0) {
+        this.shuffleDiscardIntoDeck();
+      }
+      if (this.deck.length === 0) {
+        return;
+      }
+      this.hand.push(this.deck.pop());
+    }
+  }
+
+  shuffleDiscardIntoDeck() {
+    if (this.discardPile.length === 0) {
+      return;
+    }
+    this.deck = this.discardPile;
+    this.discardPile = [];
+    shuffle(this.deck);
+    addLog('捨て札をシャッフルして山札に戻しました');
+  }
+
+  discardHand() {
+    this.discardPile.push(...this.hand);
+    this.hand = [];
+  }
+}
+
+class Enemy extends Character {
+  constructor() {
+    super('ダミー', 30);
+    this.actionNumber = 1;
+  }
+
+  actionText(target) {
+    if (this.actionNumber === 1) {
+      return `${this.calculateAttackDamage(6, target)}ダメージの攻撃`;
+    }
+    if (this.actionNumber === 2) {
+      return `${this.calculateAttackDamage(2, target)}x3回のダメージ攻撃`;
+    }
+    return '自身の筋力を2アップ';
+  }
+
+  act(player) {
+    if (this.actionNumber === 1) {
+      addLog(`${this.name}の攻撃`);
+      player.takeDamage(this.calculateAttackDamage(6, player));
+    } else if (this.actionNumber === 2) {
+      addLog(`${this.name}の連続攻撃`);
+      for (let i = 0; i < 3; i += 1) {
+        player.takeDamage(this.calculateAttackDamage(2, player));
+      }
+    } else {
+      this.addStrength(2);
+    }
+
+    this.actionNumber += 1;
+    if (this.actionNumber > 3) {
+      this.actionNumber = 1;
+    }
+  }
+}
+
+class Card {
+  constructor(name, cost, description) {
+    this.name = name;
+    this.cost = cost;
+    this.description = description;
+  }
+
+  canPlay(player) {
+    return player.energy >= this.cost;
+  }
+
+  play(player, enemy) {
+    if (!this.canPlay(player)) {
+      addLog('エナジーが足りません');
+      return false;
+    }
+    player.energy -= this.cost;
+    this.applyEffect(player, enemy);
+    return true;
+  }
+
+  applyEffect() {}
+}
+
+class AttackCard extends Card {
+  constructor(name, cost, damage, description) {
+    super(name, cost, description);
+    this.damage = damage;
+  }
+
+  applyEffect(player, enemy) {
+    const damage = player.calculateAttackDamage(this.damage, enemy);
+    addLog(`${this.name}を使用した`);
+    enemy.takeDamage(damage);
+  }
+}
+
+class SkillCard extends Card {
+  constructor(name, cost, block, description) {
+    super(name, cost, description);
+    this.block = block;
+  }
+
+  applyEffect(player) {
+    addLog(`${this.name}を使用した`);
+    player.addBlock(this.block);
+  }
+}
+
+class BashCard extends AttackCard {
+  constructor() {
+    super('強打', 2, 8, '相手に8ダメージを与え、弱体を2ターン付与');
+  }
+
+  applyEffect(player, enemy) {
+    super.applyEffect(player, enemy);
+    enemy.addVulnerable(2);
+  }
+}
+
+let player;
+let enemy;
+let turn;
+let gameOver;
+let logs;
+
+const handEl = document.getElementById('hand');
+const logEl = document.getElementById('log');
+const helpEl = document.getElementById('help');
+const endTurnButton = document.getElementById('end-turn');
+const newGameButton = document.getElementById('new-game');
+const helpButton = document.getElementById('help-button');
+
+function addLog(text) {
+  logs.push(String(text));
+  if (logs.length > 80) {
+    logs.shift();
+  }
+}
+
+function shuffle(items) {
+  for (let i = items.length - 1; i > 0; i -= 1) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [items[i], items[j]] = [items[j], items[i]];
+  }
+}
+
+function createInitialDeck() {
+  const deck = [];
+  for (let i = 0; i < 5; i += 1) {
+    deck.push(new AttackCard('ストライク', 1, 6, '相手に6ダメージ'));
+  }
+  for (let i = 0; i < 4; i += 1) {
+    deck.push(new SkillCard('防御', 1, 5, '自分に5ブロック'));
+  }
+  deck.push(new BashCard());
+  shuffle(deck);
+  return deck;
+}
+
+function startPlayerTurn() {
+  player.resetForTurn();
+  player.drawCards(5);
+  addLog(`ターン${turn}: カードを5枚引いた`);
+}
+
+function checkResult() {
+  if (!enemy.isAlive()) {
+    gameOver = true;
+    addLog('勝利しました');
+  } else if (!player.isAlive()) {
+    gameOver = true;
+    addLog('敗北しました');
+  }
+}
+
+function initializeGame() {
+  player = new Player();
+  enemy = new Enemy();
+  player.deck = createInitialDeck();
+  turn = 1;
+  gameOver = false;
+  logs = [];
+  addLog('戦闘開始');
+  addLog('初めての人はヘルプを確認してください');
+  startPlayerTurn();
+  render();
+}
+
+function playCard(index) {
+  if (gameOver) {
+    return;
+  }
+  const card = player.hand[index];
+  if (!card) {
+    addLog('正しいカード番号を選んでください');
+    render();
+    return;
+  }
+  if (card.play(player, enemy)) {
+    const usedCard = player.hand.splice(index, 1)[0];
+    player.discardPile.push(usedCard);
+    checkResult();
+  }
+  render();
+}
+
+function endTurn() {
+  if (gameOver) {
+    return;
+  }
+  player.discardHand();
+  enemy.decreaseStatuses();
+
+  if (enemy.isAlive()) {
+    enemy.act(player);
+    checkResult();
+  }
+
+  if (!gameOver) {
+    turn += 1;
+    startPlayerTurn();
+  }
+  render();
+}
+
+function helpText() {
+  return [
+    '【ゲームの説明】',
+    '毎ターン配られる手札とエナジーを使い、自身のHPが0になる前に敵を倒します。',
+    '',
+    '【カード】',
+    'ストライク: 敵に6ダメージ',
+    '防御: 自分に5ブロック',
+    '強打: 敵に8ダメージを与え、弱体を2ターン付与',
+    '',
+    '【用語】',
+    'エナジー: カードを使うためのポイント。毎ターン3に戻ります。',
+    'ブロック: 敵からのダメージを防ぎます。自分のターン開始時に消えます。',
+    '弱体: 受けるアタックダメージが1.5倍になります。',
+    '筋力: 与えるアタックダメージが増えます。'
+  ].join('\n');
+}
+
+function hpPercent(unit) {
+  return `${Math.max(0, Math.min(100, (unit.hp / unit.maxHp) * 100))}%`;
+}
+
+function renderStats(id, unit, extra) {
+  const rows = [
+    `HP:${unit.hp}/${unit.maxHp}`,
+    `ブロック:${unit.block}`,
+    `弱体:${unit.vulnerable}`,
+    `筋力:${unit.strength}`,
+    ...extra
+  ];
+  document.getElementById(id).innerHTML = rows.map((row) => `<span class="tag">${row}</span>`).join('');
+}
+
+function render() {
+  document.getElementById('enemy-name').textContent = enemy.name;
+  document.getElementById('player-name').textContent = player.name;
+  document.getElementById('enemy-intent').textContent = `行動: ${enemy.isAlive() ? enemy.actionText(player) : '-'}`;
+  document.getElementById('turn-label').textContent = gameOver ? '終了' : `ターン ${turn}`;
+  document.getElementById('energy-label').textContent = `エナジー: ${player.energy}`;
+  document.getElementById('enemy-hpbar').style.width = hpPercent(enemy);
+  document.getElementById('player-hpbar').style.width = hpPercent(player);
+
+  renderStats('enemy-stats', enemy, []);
+  renderStats('player-stats', player, [`山札:${player.deck.length}`, `捨て札:${player.discardPile.length}`]);
+
+  if (gameOver) {
+    handEl.innerHTML = '<p class="result">ゲーム終了。「最初から」で再戦できます。</p>';
+  } else if (player.hand.length === 0) {
+    handEl.innerHTML = '<p class="result">手札がありません。ターンを終了してください。</p>';
+  } else {
+    handEl.innerHTML = player.hand.map((card, index) => {
+      const disabled = card.cost > player.energy ? 'disabled' : '';
+      return `
+        <button class="card" type="button" data-index="${index}" ${disabled}>
+          <span class="card-title"><span>${card.name}</span><span class="cost">${card.cost}</span></span>
+          <p class="desc">${card.description}</p>
+        </button>
+      `;
+    }).join('');
+  }
+
+  logEl.textContent = logs.join('\n');
+  logEl.scrollTop = logEl.scrollHeight;
+  endTurnButton.disabled = gameOver;
+}
+
+handEl.addEventListener('click', (event) => {
+  const card = event.target.closest('.card');
+  if (card) {
+    playCard(Number(card.dataset.index));
+  }
+});
+
+endTurnButton.addEventListener('click', endTurn);
+newGameButton.addEventListener('click', initializeGame);
+helpButton.addEventListener('click', () => {
+  helpEl.hidden = !helpEl.hidden;
+  helpEl.textContent = helpText();
+});
+
+initializeGame();
+</script>
+</body>
+</html>
