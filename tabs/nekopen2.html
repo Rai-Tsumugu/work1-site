@@ -1,0 +1,706 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Debt Spin</title>
+<style>
+  :root {
+    --ink: #17191f;
+    --paper: #fbfaf7;
+    --panel: #ffffff;
+    --soft: #f0eee8;
+    --line: #dedbd2;
+    --muted: #6f716d;
+    --gold: #d99819;
+    --mint: #138a63;
+    --red: #c94432;
+    --blue: #3158d4;
+    --shadow: 0 18px 50px rgba(20, 22, 28, 0.08);
+    --font: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Noto Sans JP", sans-serif;
+    --mono: "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font);
+    color: var(--ink);
+    background:
+      linear-gradient(135deg, rgba(49, 88, 212, 0.08), transparent 32%),
+      linear-gradient(315deg, rgba(19, 138, 99, 0.08), transparent 30%),
+      var(--paper);
+    padding: 28px;
+  }
+
+  .app {
+    width: min(1100px, 100%);
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 310px;
+    gap: 18px;
+  }
+
+  .header {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 18px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .eyebrow {
+    margin: 0 0 7px;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+  }
+
+  h1 {
+    margin: 0;
+    font-size: clamp(25px, 4vw, 42px);
+    line-height: 1;
+    letter-spacing: 0;
+  }
+
+  .round-badge {
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.72);
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .machine,
+  .side,
+  .modal-panel {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+  }
+
+  .machine {
+    padding: 20px;
+    display: grid;
+    gap: 18px;
+  }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .stat {
+    background: var(--soft);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 12px;
+    min-width: 0;
+  }
+
+  .stat span {
+    display: block;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    margin-bottom: 6px;
+  }
+
+  .stat strong {
+    display: block;
+    font-size: 20px;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .reels {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .reel {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 1 / 1;
+    border-radius: 8px;
+    border: 2px solid var(--ink);
+    background:
+      radial-gradient(circle at 50% 22%, rgba(255, 255, 255, 0.9), transparent 36%),
+      linear-gradient(180deg, #f8f6ef, #e7e1d6);
+    font-size: clamp(52px, 11vw, 92px);
+    box-shadow: inset 0 -12px 28px rgba(23, 25, 31, 0.08);
+    user-select: none;
+  }
+
+  .reel.spin {
+    animation: pop 0.22s ease;
+  }
+
+  @keyframes pop {
+    0% { transform: translateY(-4px) scale(0.98); filter: blur(2px); }
+    100% { transform: translateY(0) scale(1); filter: blur(0); }
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: center;
+  }
+
+  button {
+    appearance: none;
+    border: 1px solid var(--ink);
+    border-radius: 6px;
+    background: var(--ink);
+    color: var(--paper);
+    font-family: var(--font);
+    font-weight: 800;
+    font-size: 15px;
+    padding: 13px 18px;
+    cursor: pointer;
+    transition: transform 0.14s ease, opacity 0.14s ease, background 0.14s ease;
+  }
+
+  button:hover:not(:disabled) { transform: translateY(-1px); }
+  button:active:not(:disabled) { transform: translateY(0); opacity: 0.82; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+
+  .secondary {
+    background: transparent;
+    color: var(--ink);
+  }
+
+  .spin-button {
+    min-width: 150px;
+    background: var(--blue);
+    border-color: var(--blue);
+  }
+
+  .message {
+    min-height: 46px;
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: 6px;
+    background: var(--soft);
+    border: 1px solid var(--line);
+    font-weight: 700;
+    color: var(--ink);
+  }
+
+  .side {
+    padding: 16px;
+    display: grid;
+    gap: 16px;
+    align-content: start;
+  }
+
+  .panel-title {
+    margin: 0 0 10px;
+    font-size: 14px;
+    font-weight: 900;
+  }
+
+  .paytable,
+  .charms,
+  .log {
+    display: grid;
+    gap: 8px;
+  }
+
+  .row,
+  .charm,
+  .log-item {
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: var(--paper);
+    padding: 10px;
+  }
+
+  .row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+    font-size: 13px;
+  }
+
+  .symbol {
+    font-size: 22px;
+    margin-right: 8px;
+  }
+
+  .charm strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 13px;
+  }
+
+  .charm p,
+  .log-item {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .progress {
+    height: 12px;
+    overflow: hidden;
+    background: var(--soft);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+  }
+
+  .bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, var(--gold), var(--mint));
+    transition: width 0.22s ease;
+  }
+
+  .modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    place-items: center;
+    padding: 22px;
+    background: rgba(23, 25, 31, 0.32);
+    backdrop-filter: blur(8px);
+    z-index: 10;
+  }
+
+  .modal.show { display: grid; }
+
+  .modal-panel {
+    width: min(760px, 100%);
+    padding: 20px;
+  }
+
+  .modal-panel h2 {
+    margin: 0 0 8px;
+    font-size: 24px;
+  }
+
+  .modal-panel > p {
+    margin: 0 0 16px;
+    color: var(--muted);
+  }
+
+  .choices {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .choice {
+    text-align: left;
+    background: var(--paper);
+    color: var(--ink);
+    border-color: var(--line);
+    min-height: 150px;
+    display: grid;
+    align-content: start;
+    gap: 7px;
+  }
+
+  .choice b {
+    font-size: 16px;
+  }
+
+  .choice span {
+    color: var(--muted);
+    line-height: 1.45;
+    font-weight: 600;
+  }
+
+  .status-good { color: var(--mint); }
+  .status-bad { color: var(--red); }
+
+  @media (max-width: 860px) {
+    body { padding: 18px; }
+    .app { grid-template-columns: 1fr; }
+    .header { align-items: start; flex-direction: column; }
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .controls { grid-template-columns: 1fr; }
+    .spin-button { width: 100%; }
+    .choices { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 460px) {
+    .stats { grid-template-columns: 1fr; }
+    .machine, .side, .modal-panel { padding: 14px; }
+    .reels { gap: 8px; }
+    .message { font-size: 13px; }
+  }
+</style>
+</head>
+<body>
+  <main class="app">
+    <header class="header">
+      <div>
+        <p class="eyebrow">Roguelite Slot Prototype</p>
+        <h1>Debt Spin</h1>
+      </div>
+      <div class="round-badge" id="roundBadge">ROUND 1</div>
+    </header>
+
+    <section class="machine">
+      <div class="stats">
+        <div class="stat">
+          <span>資金</span>
+          <strong id="money">0</strong>
+        </div>
+        <div class="stat">
+          <span>借金ノルマ</span>
+          <strong id="target">0</strong>
+        </div>
+        <div class="stat">
+          <span>残りスピン</span>
+          <strong id="spins">0</strong>
+        </div>
+        <div class="stat">
+          <span>スピン費用</span>
+          <strong id="cost">0</strong>
+        </div>
+      </div>
+
+      <div class="progress">
+        <div class="bar" id="bar"></div>
+      </div>
+
+      <div class="reels" aria-label="slot reels">
+        <div class="reel" id="reel0">🍒</div>
+        <div class="reel" id="reel1">🔔</div>
+        <div class="reel" id="reel2">⭐</div>
+      </div>
+
+      <div class="controls">
+        <p class="message" id="message">スピンして返済資金を稼げ。</p>
+        <button class="spin-button" id="spinButton">SPIN</button>
+      </div>
+
+      <button class="secondary" id="restartButton">最初からやり直す</button>
+    </section>
+
+    <aside class="side">
+      <section>
+        <h2 class="panel-title">配当表</h2>
+        <div class="paytable" id="paytable"></div>
+      </section>
+
+      <section>
+        <h2 class="panel-title">所持チャーム</h2>
+        <div class="charms" id="charms"></div>
+      </section>
+
+      <section>
+        <h2 class="panel-title">直近の結果</h2>
+        <div class="log" id="log"></div>
+      </section>
+    </aside>
+  </main>
+
+  <div class="modal" id="modal">
+    <div class="modal-panel">
+      <h2 id="modalTitle">チャームを選択</h2>
+      <p id="modalText">ラウンドクリア報酬を1つ選んでください。</p>
+      <div class="choices" id="choices"></div>
+    </div>
+  </div>
+
+<script>
+const symbols = [
+  { icon: "🍒", name: "チェリー", value: 18 },
+  { icon: "🔔", name: "ベル", value: 24 },
+  { icon: "⭐", name: "スター", value: 32 },
+  { icon: "💎", name: "ダイヤ", value: 48 },
+  { icon: "7️⃣", name: "セブン", value: 72 }
+];
+
+const charmPool = [
+  {
+    name: "チェリー貯金箱",
+    text: "🍒が出るたびに+12。",
+    apply(result, score) {
+      return score + result.filter(s => s.icon === "🍒").length * 12;
+    }
+  },
+  {
+    name: "ベル利息",
+    text: "🔔が2個以上なら+45。",
+    apply(result, score) {
+      return score + (result.filter(s => s.icon === "🔔").length >= 2 ? 45 : 0);
+    }
+  },
+  {
+    name: "スター倍率券",
+    text: "⭐を含む当たりの最終スコアが1.35倍。",
+    apply(result, score, matched) {
+      return matched && result.some(s => s.icon === "⭐") ? Math.floor(score * 1.35) : score;
+    }
+  },
+  {
+    name: "ダイヤ研磨布",
+    text: "💎1個につき+22。",
+    apply(result, score) {
+      return score + result.filter(s => s.icon === "💎").length * 22;
+    }
+  },
+  {
+    name: "セブン契約書",
+    text: "7️⃣を含む3揃いは+180。",
+    apply(result, score, matched) {
+      return matched === 3 && result.some(s => s.icon === "7️⃣") ? score + 180 : score;
+    }
+  },
+  {
+    name: "粗利ブースター",
+    text: "すべての獲得スコアが1.15倍。",
+    apply(result, score) {
+      return Math.floor(score * 1.15);
+    }
+  },
+  {
+    name: "損切り保険",
+    text: "ハズレ時に+20。",
+    apply(result, score, matched) {
+      return matched ? score : score + 20;
+    }
+  },
+  {
+    name: "締切延長印",
+    text: "取得時、次ラウンドの制限スピン+1。",
+    onTake(state) {
+      state.extraSpins += 1;
+    },
+    apply(result, score) {
+      return score;
+    }
+  }
+];
+
+const state = {
+  round: 1,
+  money: 120,
+  target: 360,
+  spinsLeft: 9,
+  spinCost: 25,
+  extraSpins: 0,
+  charms: [],
+  log: [],
+  locked: false,
+  gameOver: false
+};
+
+const els = {
+  roundBadge: document.getElementById("roundBadge"),
+  money: document.getElementById("money"),
+  target: document.getElementById("target"),
+  spins: document.getElementById("spins"),
+  cost: document.getElementById("cost"),
+  bar: document.getElementById("bar"),
+  message: document.getElementById("message"),
+  spinButton: document.getElementById("spinButton"),
+  restartButton: document.getElementById("restartButton"),
+  paytable: document.getElementById("paytable"),
+  charms: document.getElementById("charms"),
+  log: document.getElementById("log"),
+  modal: document.getElementById("modal"),
+  modalTitle: document.getElementById("modalTitle"),
+  modalText: document.getElementById("modalText"),
+  choices: document.getElementById("choices"),
+  reels: [0, 1, 2].map(i => document.getElementById(`reel${i}`))
+};
+
+function format(n) {
+  return `¥${n.toLocaleString("ja-JP")}`;
+}
+
+function pickSymbol() {
+  const roll = Math.random();
+  if (roll < 0.31) return symbols[0];
+  if (roll < 0.56) return symbols[1];
+  if (roll < 0.76) return symbols[2];
+  if (roll < 0.91) return symbols[3];
+  return symbols[4];
+}
+
+function calculate(result) {
+  const counts = new Map();
+  result.forEach(s => counts.set(s.icon, (counts.get(s.icon) || 0) + 1));
+  const max = Math.max(...counts.values());
+  let score = 0;
+  if (max === 3) {
+    const symbol = result.find(s => counts.get(s.icon) === 3);
+    score = symbol.value * 6;
+  } else if (max === 2) {
+    const symbol = result.find(s => counts.get(s.icon) === 2);
+    score = symbol.value * 2;
+  }
+  const base = score;
+  state.charms.forEach(charm => {
+    score = charm.apply(result, score, max >= 2 ? max : 0);
+  });
+  return { base, total: score, matched: max >= 2 ? max : 0 };
+}
+
+function spin() {
+  if (state.locked || state.gameOver) return;
+  if (state.spinsLeft <= 0 || state.money < state.spinCost) {
+    endGame(false);
+    return;
+  }
+
+  state.locked = true;
+  state.money -= state.spinCost;
+  state.spinsLeft -= 1;
+
+  const result = [pickSymbol(), pickSymbol(), pickSymbol()];
+  els.reels.forEach((reel, index) => {
+    reel.classList.remove("spin");
+    reel.textContent = result[index].icon;
+    requestAnimationFrame(() => reel.classList.add("spin"));
+  });
+
+  const score = calculate(result);
+  state.money += score.total;
+  const label = result.map(s => s.icon).join(" ");
+  const detail = score.matched === 3 ? "3揃い" : score.matched === 2 ? "2揃い" : "ハズレ";
+  state.log.unshift(`${label} / ${detail} / +${format(score.total)}`);
+  state.log = state.log.slice(0, 5);
+
+  if (score.total > 0) {
+    els.message.innerHTML = `<span class="status-good">${detail}</span> ${format(score.total)} を獲得。`;
+  } else {
+    els.message.innerHTML = `<span class="status-bad">ハズレ</span> 収益なし。`;
+  }
+
+  render();
+
+  setTimeout(() => {
+    state.locked = false;
+    if (state.money >= state.target) {
+      clearRound();
+    } else if (state.spinsLeft <= 0 || state.money < state.spinCost) {
+      endGame(false);
+    }
+    render();
+  }, 260);
+}
+
+function clearRound() {
+  state.locked = true;
+  els.message.innerHTML = `<span class="status-good">ROUND ${state.round} CLEAR</span> 借金返済ラインに到達。`;
+  showCharmChoices();
+}
+
+function nextRound() {
+  state.round += 1;
+  state.target = Math.floor(360 * Math.pow(1.62, state.round - 1));
+  state.spinCost = 25 + Math.floor((state.round - 1) * 7);
+  state.spinsLeft = Math.max(6, 9 + state.extraSpins - Math.floor((state.round - 1) / 2));
+  state.money = Math.max(140 + state.round * 12, Math.floor(state.money * 0.42));
+  state.locked = false;
+  els.modal.classList.remove("show");
+  els.message.textContent = `ROUND ${state.round} 開始。期限内に ${format(state.target)} へ到達せよ。`;
+  render();
+}
+
+function endGame(win) {
+  state.gameOver = true;
+  state.locked = true;
+  els.message.innerHTML = win
+    ? `<span class="status-good">完全返済</span> 記録: ROUND ${state.round}`
+    : `<span class="status-bad">GAME OVER</span> ROUND ${state.round} の返済に失敗。`;
+  render();
+}
+
+function showCharmChoices() {
+  const ownedNames = new Set(state.charms.map(c => c.name));
+  const available = charmPool.filter(c => !ownedNames.has(c.name));
+  const shuffled = available.sort(() => Math.random() - 0.5).slice(0, 3);
+  const choices = shuffled.length ? shuffled : charmPool.sort(() => Math.random() - 0.5).slice(0, 3);
+
+  els.modalTitle.textContent = "チャームを選択";
+  els.modalText.textContent = "次のラウンドへ持ち込むパッシブ効果を1つ取得できます。";
+  els.choices.innerHTML = "";
+
+  choices.forEach(charm => {
+    const button = document.createElement("button");
+    button.className = "choice";
+    button.innerHTML = `<b>${charm.name}</b><span>${charm.text}</span>`;
+    button.addEventListener("click", () => {
+      state.charms.push(charm);
+      if (charm.onTake) charm.onTake(state);
+      nextRound();
+    });
+    els.choices.appendChild(button);
+  });
+
+  els.modal.classList.add("show");
+}
+
+function restart() {
+  state.round = 1;
+  state.money = 120;
+  state.target = 360;
+  state.spinsLeft = 9;
+  state.spinCost = 25;
+  state.extraSpins = 0;
+  state.charms = [];
+  state.log = [];
+  state.locked = false;
+  state.gameOver = false;
+  els.modal.classList.remove("show");
+  els.reels.forEach((reel, index) => reel.textContent = symbols[index].icon);
+  els.message.textContent = "スピンして返済資金を稼げ。";
+  render();
+}
+
+function renderPaytable() {
+  els.paytable.innerHTML = symbols.map(s => `
+    <div class="row">
+      <div><span class="symbol">${s.icon}</span>${s.name}</div>
+      <strong>2x ${format(s.value * 2)} / 3x ${format(s.value * 6)}</strong>
+    </div>
+  `).join("");
+}
+
+function render() {
+  els.roundBadge.textContent = `ROUND ${state.round}`;
+  els.money.textContent = format(state.money);
+  els.target.textContent = format(state.target);
+  els.spins.textContent = state.spinsLeft;
+  els.cost.textContent = format(state.spinCost);
+  els.bar.style.width = `${Math.min(100, Math.floor((state.money / state.target) * 100))}%`;
+  els.spinButton.disabled = state.locked || state.gameOver;
+  els.charms.innerHTML = state.charms.length
+    ? state.charms.map(c => `<div class="charm"><strong>${c.name}</strong><p>${c.text}</p></div>`).join("")
+    : `<div class="charm"><p>まだ所持していません。</p></div>`;
+  els.log.innerHTML = state.log.length
+    ? state.log.map(item => `<div class="log-item">${item}</div>`).join("")
+    : `<div class="log-item">スピン結果がここに残ります。</div>`;
+}
+
+els.spinButton.addEventListener("click", spin);
+els.restartButton.addEventListener("click", restart);
+renderPaytable();
+render();
+</script>
+</body>
+</html>
