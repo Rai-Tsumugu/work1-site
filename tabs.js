@@ -5,4 +5,5 @@ const TABS = [
   { name: "おみくじ", file: "tabs/omikuji.html", author: "先生" },
   { name: "割り勘計算", file: "tabs/warikan.html", author: "先生" },
   // ↓この下に追加
+  { name: "パチンコ", file: "tabs/pachinko.html", author: "que" },
 ];
