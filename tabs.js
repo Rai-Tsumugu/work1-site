@@ -3,5 +3,10 @@
 const TABS = [
   { name: "おみ9じ", file: "tabs/omikuji.html", author: "先生" },
   { name: "学食人気投票", file: "tabs/index.html", author: "俺" },
+  { name: "見本: あいさつ", file: "tabs/_sample.html", author: "先生" },
+  { name: "おみくじ", file: "tabs/omikuji.html", author: "先生" },
+  { name: "割り勘計算", file: "tabs/warikan.html", author: "先生" },
+  
   // ↓この下に追加
+  { name: "ネコペン・スパイア", file: "tabs/nekopen.html", author: "nekopen" },
 ];
