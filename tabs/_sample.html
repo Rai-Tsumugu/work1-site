@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>見本タブ</title>
+<style>
+  body {
+    font-family: "Hiragino Sans", "Noto Sans JP", -apple-system, sans-serif;
+    padding: 32px;
+    text-align: center;
+  }
+  button {
+    font-size: 18px;
+    padding: 12px 24px;
+    border-radius: 8px;
+    border: none;
+    background: #FF5757;
+    color: white;
+    cursor: pointer;
+  }
+  #msg {
+    margin-top: 24px;
+    font-size: 20px;
+  }
+</style>
+</head>
+<body>
+  <h2>これは見本タブです</h2>
+  <p>このファイル（tabs/_sample.html）をコピーして、自分のタブを作ってください。</p>
+  <button onclick="greet()">押してみる</button>
+  <p id="msg"></p>
+
+  <script>
+    function greet() {
+      const messages = ["こんにちは！", "今日も開発がんばろう", "AIと一緒に作ろう", "これがタブの中身です"];
+      const pick = messages[Math.floor(Math.random() * messages.length)];
+      document.getElementById('msg').textContent = pick;
+    }
+  </script>
+</body>
+</html>

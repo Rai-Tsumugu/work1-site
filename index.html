@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>みんなのタブ</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="app-header">
+    <h1>みんなのタブ</h1>
+    <p class="app-sub">それぞれが作った機能が、1つのサイトになります。</p>
+  </header>
+
+  <main class="app-main">
+    <nav id="tab-nav" class="tab-nav"></nav>
+    <div class="tab-frame-wrap">
+      <iframe id="tab-frame" class="tab-frame" title="機能表示エリア"></iframe>
+    </div>
+  </main>
+
+  <footer class="app-footer">
+    <p>タブを追加するには <code>tabs/自分の名前.html</code> を作り、<code>tabs.js</code> に1行追加してください。</p>
+  </footer>
+
+  <script src="tabs.js"></script>
+  <script>
+    const nav = document.getElementById('tab-nav');
+    const frame = document.getElementById('tab-frame');
+
+    function selectTab(index) {
+      const tab = TABS[index];
+      frame.src = tab.file;
+      document.querySelectorAll('.tab-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', i === index);
+      });
+    }
+
+    TABS.forEach((tab, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'tab-btn';
+      btn.textContent = tab.name + (tab.author ? `（${tab.author}）` : '');
+      btn.addEventListener('click', () => selectTab(i));
+      nav.appendChild(btn);
+    });
+
+    if (TABS.length > 0) {
+      selectTab(0);
+    }
+  </script>
+</body>
+</html>
