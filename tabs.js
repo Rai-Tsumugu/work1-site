@@ -7,5 +7,6 @@ const TABS = [
   
   // ↓この下に追加
   { name: "ネコペン・スパイア", file: "tabs/nekopen.html", author: "nekopen" },`r`n  
-  { name: "NEKO Spin", file: "tabs/nekopen2.html", author: "nekopen" },`r`n];
+  { name: "NEKO Spin", file: "tabs/nekopen2.html", author: "nekopen" },`r`n
+];
 
