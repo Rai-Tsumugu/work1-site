@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>おみくじ</title>
+<style>
+  body {
+    font-family: "Hiragino Sans", "Noto Sans JP", -apple-system, sans-serif;
+    padding: 32px;
+    text-align: center;
+    background: #FFF7E7;
+  }
+  h2 { margin-bottom: 8px; }
+  button {
+    font-size: 18px;
+    padding: 14px 28px;
+    border-radius: 8px;
+    border: none;
+    background: #FF5757;
+    color: white;
+    cursor: pointer;
+    margin-top: 16px;
+  }
+  button:active {
+    transform: scale(0.97);
+  }
+  #result {
+    margin-top: 28px;
+    font-size: 40px;
+    font-weight: bold;
+    min-height: 56px;
+  }
+  .kichi { color: #D18005; }
+  .kyo { color: #292929; opacity: 0.6; }
+</style>
+</head>
+<body>
+  <h2>今日のおみくじ</h2>
+  <p>ボタンを押すと結果が出ます。何度でも引き直せます。</p>
+  <button onclick="draw()">おみくじを引く</button>
+  <div id="result"></div>
+
+  <script>
+    const OMIKUJI = ["大吉", "中吉", "小吉", "吉", "末吉", "凶"];
+
+    function draw() {
+      const pick = OMIKUJI[Math.floor(Math.random() * OMIKUJI.length)];
+      const el = document.getElementById('result');
+      el.textContent = pick;
+      el.className = pick === "凶" ? "kyo" : "kichi";
+    }
+  </script>
+</body>
+</html>
