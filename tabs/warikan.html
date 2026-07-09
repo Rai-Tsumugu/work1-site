@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>割り勘計算</title>
+<style>
+  body {
+    font-family: "Hiragino Sans", "Noto Sans JP", -apple-system, sans-serif;
+    padding: 32px;
+    background: #FFF7E7;
+  }
+  h2 { margin-bottom: 8px; }
+  .field {
+    margin: 16px 0;
+  }
+  label {
+    display: block;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+  input {
+    font-size: 18px;
+    padding: 8px 12px;
+    border: 2px solid #D18005;
+    border-radius: 6px;
+    width: 200px;
+  }
+  button {
+    font-size: 16px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    background: #FF5757;
+    color: white;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  #result {
+    margin-top: 24px;
+    font-size: 20px;
+    line-height: 1.8;
+  }
+  .error { color: #FF5757; }
+</style>
+</head>
+<body>
+  <h2>割り勘計算</h2>
+  <p>合計金額と人数を入れてください。端数は幹事が多く払う想定で計算します。</p>
+
+  <div class="field">
+    <label for="total">合計金額（円）</label>
+    <input type="number" id="total" value="10000" min="0">
+  </div>
+  <div class="field">
+    <label for="people">人数</label>
+    <input type="number" id="people" value="3" min="1">
+  </div>
+
+  <button onclick="calc()">計算する</button>
+  <div id="result"></div>
+
+  <script>
+    function calc() {
+      const total = Number(document.getElementById('total').value);
+      const people = Number(document.getElementById('people').value);
+      const el = document.getElementById('result');
+
+      if (!Number.isFinite(total) || total < 0) {
+        el.innerHTML = '<span class="error">合計金額は0以上の数字を入れてください</span>';
+        return;
+      }
+      if (!Number.isInteger(people) || people <= 0) {
+        el.innerHTML = '<span class="error">人数は1以上の整数を入れてください</span>';
+        return;
+      }
+
+      const base = Math.floor(total / people);
+      const remainder = total - base * people;
+
+      el.innerHTML = `
+        1人あたり：<strong>${base.toLocaleString()}円</strong><br>
+        端数（幹事が追加で負担）：${remainder.toLocaleString()}円<br>
+        幹事の支払い：<strong>${(base + remainder).toLocaleString()}円</strong>
+      `;
+    }
+
+    calc();
+  </script>
+</body>
+</html>
